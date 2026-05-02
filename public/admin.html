@@ -296,9 +296,9 @@ const SEED={
     {id:3,author:'Дмитрий Волков',role:'Ученик · 8 месяцев',text:'Записался на пробное, остался навсегда. Savva Team — это семья, где тебя поддерживают и помогают расти. Выиграл первый турнир уже через 4 месяца!'},
   ],
   coaches:[
-    {id:1,name:'Савва Шехватов',role:'Head Coach',eyebrow:'01 · Head Coach',level:'A1',bio:'Основатель академии. 12 лет профессионального опыта в теннисе и паделе. Сертифицированный тренер FIP. Обучает взрослых и игроков уровня advanced. Автор методики «Техника через логику».',stats:'12 лет опыта|FIP сертификат|A1 уровень',photo:'uploads/саваа.jpeg',video:''},
-    {id:2,name:'Катита Леонова',role:'Junior Coach',eyebrow:'02 · Junior Coach',level:'B/A',bio:'Смэш — это не просто удар. Это моя подпись. Моё «ало». Я люблю его не за грубую силу, а за ту самую секунду абсолютной власти над мячом — когда соперник кидает свечку в надежде отдышаться, и я слышу зов.',stats:'9 лет опыта|P1 рейтинг|B/A уровень',photo:'uploads/Катита 1.PNG',video:''},
-    {id:3,name:'Елена Алешина',role:'Junior Coach',eyebrow:'03 · Junior Coach',level:'C/B',bio:'Работает с детьми от 6 лет и начинающими взрослыми. Бывший игрок юниорской сборной. Главный принцип — игровой подход и развитие координации.',stats:'7 лет опыта|6+ возраст|C/B уровень',photo:'uploads/Елена 1.PNG',video:''},
+    {id:1,name:'Савва Шехватов',role:'Head Coach',eyebrow:'01 · Head Coach',bio:'Основатель академии. 12 лет профессионального опыта в теннисе и паделе. Сертифицированный тренер FIP. Обучает взрослых и игроков уровня advanced. Автор методики «Техника через логику».',stat1_num:'12',stat1_label:'лет опыта',stat2_num:'FIP',stat2_label:'сертификат',stat3_num:'A1',stat3_label:'уровень',photo:'uploads/саваа.jpeg',video:''},
+    {id:2,name:'Катита Леонова',role:'Junior Coach',eyebrow:'02 · Junior Coach',bio:'Смэш — это не просто удар. Это моя подпись. Моё «ало». Я люблю его не за грубую силу, а за ту самую секунду абсолютной власти над мячом — когда соперник кидает свечку в надежде отдышаться, и я слышу зов.',stat1_num:'9',stat1_label:'лет опыта',stat2_num:'P1',stat2_label:'рейтинг',stat3_num:'B/A',stat3_label:'уровень',photo:'uploads/Катита 1.PNG',video:''},
+    {id:3,name:'Елена Алешина',role:'Junior Coach',eyebrow:'03 · Junior Coach',bio:'Работает с детьми от 6 лет и начинающими взрослыми. Бывший игрок юниорской сборной. Главный принцип — игровой подход и развитие координации.',stat1_num:'7',stat1_label:'лет опыта',stat2_num:'6+',stat2_label:'возраст',stat3_num:'C/B',stat3_label:'уровень',photo:'uploads/Елена 1.PNG',video:''},
   ],
   texts:{
     hero_eyebrow:'Академия падел тенниса',
@@ -389,10 +389,12 @@ async function fetchLeadsAndStats(secret){
     // Мержим медиа-ключи в state.media
     if(!state.media) state.media = {};
     ['hero_video_url','showreel_url','showreel_poster','showreel_caption'].forEach(k=>{ if(c[k]!=null) state.media[k]=c[k]; });
-    // Мержим фото/видео тренеров
+    // Мержим все поля тренеров из content API
     if(state.coaches) state.coaches.forEach(co=>{
-      if(c['coach'+co.id+'_photo']!=null) co.photo = c['coach'+co.id+'_photo'];
-      if(c['coach'+co.id+'_video']!=null) co.video = c['coach'+co.id+'_video'];
+      const n = co.id;
+      const fields = ['name','eyebrow','bio','photo','video',
+        'stat1_num','stat1_label','stat2_num','stat2_label','stat3_num','stat3_label'];
+      fields.forEach(f=>{ const v=c['coach'+n+'_'+f]; if(v!=null) co[f]=v; });
     });
     saveStore();
   }
@@ -1032,10 +1034,17 @@ function renderCoaches(c){
            ${co.photo?`<button class="btn btn-danger" style="font-size:11px;margin-left:6px" onclick="clearCoachPhoto(${co.id})">✕</button>`:''}</div>
          </div>
        </div>
-       <div class="field"><label>Имя</label><input data-cid="${co.id}" data-key="name" value="${escapeAttr(co.name||'')}"/></div>
-       <div class="field"><label>Роль</label><input data-cid="${co.id}" data-key="role" value="${escapeAttr(co.role||'')}" placeholder="Head Coach / Junior Coach"/></div>
-       <div class="field"><label>Уровень</label><input data-cid="${co.id}" data-key="level" value="${escapeAttr(co.level||'')}" placeholder="A / B / C"/></div>
+       <div class="field"><label>Имя (Фамилия отдельным словом в конце)</label><input data-cid="${co.id}" data-key="name" value="${escapeAttr(co.name||'')}"/></div>
+       <div class="field"><label>Подпись (eyebrow)</label><input data-cid="${co.id}" data-key="eyebrow" value="${escapeAttr(co.eyebrow||'')}" placeholder="01 · Head Coach"/></div>
        <div class="field"><label>Биография</label><textarea data-cid="${co.id}" data-key="bio">${escapeHtml(co.bio||'')}</textarea></div>
+       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+         <div class="field"><label>Стат 1 — число</label><input data-cid="${co.id}" data-key="stat1_num" value="${escapeAttr(co.stat1_num||'')}"/></div>
+         <div class="field"><label>Стат 2 — число</label><input data-cid="${co.id}" data-key="stat2_num" value="${escapeAttr(co.stat2_num||'')}"/></div>
+         <div class="field"><label>Стат 3 — число</label><input data-cid="${co.id}" data-key="stat3_num" value="${escapeAttr(co.stat3_num||'')}"/></div>
+         <div class="field"><label>Стат 1 — подпись</label><input data-cid="${co.id}" data-key="stat1_label" value="${escapeAttr(co.stat1_label||'')}"/></div>
+         <div class="field"><label>Стат 2 — подпись</label><input data-cid="${co.id}" data-key="stat2_label" value="${escapeAttr(co.stat2_label||'')}"/></div>
+         <div class="field"><label>Стат 3 — подпись</label><input data-cid="${co.id}" data-key="stat3_label" value="${escapeAttr(co.stat3_label||'')}"/></div>
+       </div>
        <div class="field"><label>URL фото (опционально)</label><input data-cid="${co.id}" data-key="photo" value="${escapeAttr(co.photo&&!co.photo.startsWith('data:')?co.photo:'')}" placeholder="https://... или загрузите выше"/></div>
        <div style="border-top:1px solid var(--border);margin:14px 0 8px;padding-top:14px"><div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px">▶ Видео тренера</div>
          ${co.video?`<div style="background:#000;border-radius:8px;aspect-ratio:16/9;overflow:hidden;margin-bottom:10px;border:1px solid var(--border)">${isYouTube(co.video)?`<iframe src="${escapeAttr(ytEmbed(co.video))}" style="width:100%;height:100%;border:0" allowfullscreen></iframe>`:`<video src="${escapeAttr(co.video)}" controls style="width:100%;height:100%;object-fit:cover"></video>`}</div>`:''}
@@ -1048,14 +1057,27 @@ function renderCoaches(c){
 async function saveCoach(id){
   const co=state.coaches.find(x=>x.id===id);if(!co)return;
   document.querySelectorAll(`[data-cid="${id}"]`).forEach(i=>{
-    if(i.dataset.key==='photo'||i.dataset.key==='video'){if(i.value)co[i.dataset.key]=i.value}
-    else co[i.dataset.key]=i.value;
+    if((i.dataset.key==='photo'||i.dataset.key==='video')&&!i.value) return;
+    co[i.dataset.key]=i.value;
   });
   saveStore();
-  // Сохраняем фото/видео в content API чтобы сайт подхватил
+  const n=id;
+  const payload={
+    ['coach'+n+'_name']:     co.name||'',
+    ['coach'+n+'_eyebrow']:  co.eyebrow||'',
+    ['coach'+n+'_bio']:      co.bio||'',
+    ['coach'+n+'_stat1_num']:co.stat1_num||'',
+    ['coach'+n+'_stat1_label']:co.stat1_label||'',
+    ['coach'+n+'_stat2_num']:co.stat2_num||'',
+    ['coach'+n+'_stat2_label']:co.stat2_label||'',
+    ['coach'+n+'_stat3_num']:co.stat3_num||'',
+    ['coach'+n+'_stat3_label']:co.stat3_label||'',
+    ['coach'+n+'_photo']:    co.photo||'',
+    ['coach'+n+'_video']:    co.video||'',
+  };
   await fetch('/api/content?secret='+encodeURIComponent(adminSecret),{
     method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({['coach'+id+'_photo']:co.photo||'',['coach'+id+'_video']:co.video||''})
+    body:JSON.stringify(payload)
   });
   renderCoaches(document.getElementById('pageContent'));
   toast('Сохранено');
