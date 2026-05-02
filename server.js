@@ -42,6 +42,61 @@ const updateStatus = db.prepare(
   "UPDATE leads SET status = ? WHERE id = ?"
 );
 
+// ── Content CMS ───────────────────────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS content (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  )
+`);
+
+const CONTENT_DEFAULTS = {
+  hero_eyebrow: 'Академия падел тенниса',
+  hero_title: 'БЬЁМ\nСИЛЬНО.\nРАСТЁМ.',
+  hero_sub: 'Персональные тренировки по падел теннису — от первого удара до турнирного пьедестала',
+  hero_cta: 'Записаться на пробное',
+  hero_cta2: 'Смотреть видео',
+  hero_badge: 'С 2024',
+  hero_stat1_num: '200+', hero_stat1_label: 'Учеников',
+  hero_stat2_num: '10',   hero_stat2_label: 'Крытых кортов',
+  hero_stat3_num: '3',    hero_stat3_label: 'Тренера',
+  hero_stat4_num: 'от 5 000 ₽', hero_stat4_label: 'занятие',
+  about_label: 'О нас',
+  about_title: 'МЫ СОЗДАЁМ\nЧЕМПИОНОВ',
+  about_p1: 'Savva Team — ведущая академия падел тенниса, объединяющая профессиональных тренеров и современную инфраструктуру. Мы верим, что падел — это больше, чем спорт.',
+  about_p2: 'Наша методика основана на международных стандартах тренировочного процесса, индивидуальном подходе к каждому игроку и постоянном анализе игры.',
+  programs_label: 'Программы',
+  programs_title: 'ДЛЯ\nКАЖДОГО',
+  schedule_label: 'Расписание',
+  schedule_title: 'КАЖДЫЙ\nДЕНЬ',
+  prices_label: 'Тарифы',
+  prices_title: 'ВЫБЕРИТЕ\nСВОЙ ПЛАН',
+  coaches_label: 'Наша команда',
+  coaches_title: 'ЛИЦА\nАКАДЕМИИ',
+  coaches_sub: 'Три тренера — три характера. Общий опыт более 20 лет в ракеточных видах спорта.',
+  coaches_detail_label: 'Персонально',
+  coaches_detail_title: 'НАШИ\nТРЕНЕРЫ',
+  testimonials_label: 'Отзывы',
+  testimonials_title: 'ЧТО\nГОВОРЯТ',
+  contact_label: 'Контакты',
+  contact_title: 'ДАВАЙТЕ\nНАЧНЁМ',
+  contact_phone: '+7 (999) 218-36-39',
+  contact_address: 'Санкт-Петербург, ул. Полевая Сабировская, 52',
+  contact_hours_week: 'Пн–Пт: 08:00 – 22:00',
+  contact_hours_weekend: 'Сб–Вс: 09:00 – 20:00',
+  footer_copy: '© 2026 Savva Team. Все права защищены.',
+};
+
+// Seed defaults (INSERT OR IGNORE — не затирает сохранённые значения)
+const insertContent = db.prepare('INSERT OR IGNORE INTO content (key, value) VALUES (?, ?)');
+const upsertContent = db.prepare('INSERT OR REPLACE INTO content (key, value) VALUES (?, ?)');
+const seedContent = db.transaction(() => {
+  for (const [k, v] of Object.entries(CONTENT_DEFAULTS)) {
+    insertContent.run(k, v);
+  }
+});
+seedContent();
+
 // ── Telegram helper ───────────────────────────────────────────────────────────
 async function sendTelegram(text) {
   if (!TG_TOKEN || !TG_CHAT) return;
@@ -158,6 +213,29 @@ app.get('/api/stats', requireSecret, (req, res) => {
     by_day:   byDay,
     last_at:  last?.created_at ?? null,
   });
+});
+
+// ── GET /api/content — публичный, читает лендинг ──────────────────────────────
+app.get('/api/content', (req, res) => {
+  const rows = db.prepare('SELECT key, value FROM content').all();
+  const obj = {};
+  rows.forEach(r => { obj[r.key] = r.value; });
+  res.json(obj);
+});
+
+// ── POST /api/content — сохранение из админки ─────────────────────────────────
+app.post('/api/content', requireSecret, (req, res) => {
+  const data = req.body;
+  if (!data || typeof data !== 'object') {
+    return res.status(400).json({ error: 'Invalid body' });
+  }
+  const save = db.transaction(() => {
+    for (const [k, v] of Object.entries(data)) {
+      if (typeof v === 'string') upsertContent.run(k, v);
+    }
+  });
+  save();
+  res.json({ ok: true });
 });
 
 // ── GET /admin ─────────────────────────────────────────────────────────────────

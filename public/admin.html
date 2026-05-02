@@ -366,13 +366,21 @@ function updateBadges(){
 
 /* ============= LOGIN ============= */
 async function fetchLeadsAndStats(secret){
-  const [leadsRes, statsRes] = await Promise.all([
+  const [leadsRes, statsRes, contentRes] = await Promise.all([
     fetch('/api/leads?secret='+encodeURIComponent(secret)),
     fetch('/api/stats?secret='+encodeURIComponent(secret)),
+    fetch('/api/content'),
   ]);
   if(!leadsRes.ok) return false;
   serverLeads = normalizeLeads(await leadsRes.json());
   if(statsRes.ok) serverStats = await statsRes.json();
+  if(contentRes.ok){
+    const serverContent = await contentRes.json();
+    // Мержим серверный контент в state.texts (сервер приоритетнее)
+    if(!state.texts) state.texts = {};
+    Object.assign(state.texts, serverContent);
+    saveStore();
+  }
   return true;
 }
 
@@ -875,10 +883,18 @@ function renderTexts(c){
        ${g.fields.map(f=>`<div class="field"><label>${f.label}</label>${f.type==='textarea'?`<textarea data-tkey="${f.key}">${escapeHtml(state.texts[f.key]||'')}</textarea>`:`<input data-tkey="${f.key}" value="${escapeAttr(state.texts[f.key]||'')}"/>`}</div>`).join('')}
      </div>`).join('')}</div>`;
 }
-function saveAllTexts(){
+async function saveAllTexts(){
   if(!state.texts)state.texts={};
   document.querySelectorAll('[data-tkey]').forEach(inp=>{state.texts[inp.dataset.tkey]=inp.value});
-  saveStore();toast('Тексты сохранены');
+  saveStore();
+  try{
+    const res=await fetch('/api/content?secret='+encodeURIComponent(adminSecret),{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(state.texts),
+    });
+    toast(res.ok?'Сохранено и опубликовано на сайте':'Сохранено локально (ошибка сервера)');
+  }catch(e){toast('Сохранено локально (нет соединения)')}
 }
 function resetTexts(){
   if(!confirm('Сбросить все тексты к значениям по умолчанию?'))return;
