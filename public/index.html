@@ -2437,6 +2437,16 @@ document.getElementById('contactSubmit').addEventListener('click', async () => {
       if (v) el.textContent = v.includes('·') ? v.split('·')[1].trim() : v;
     });
 
+    // Скрываем слайды тренеров без обоих фото
+    [1, 2, 3].forEach(n => {
+      if (!c['coach' + n + '_photo'] && !c['coach' + n + '_photo2']) {
+        document.querySelectorAll('[data-coach-cname="' + n + '"]').forEach(el => {
+          const slide = el.closest('.coach-slide');
+          if (slide) slide.style.display = 'none';
+        });
+      }
+    });
+
     // Запуск видео с URL из content API
     loadVideos(c);
   } catch(e) { loadVideos({}); }
