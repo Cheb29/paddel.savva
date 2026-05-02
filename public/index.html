@@ -8,10 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
-  <script type="text/babel" src="tweaks-panel.jsx"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -23,8 +19,8 @@
       --border: rgba(255,255,255,0.08);
       --text: #F0F0EE;
       --muted: rgba(240,240,238,0.45);
-      --accent: oklch(72% 0.22 145);
-      --accent-dim: oklch(72% 0.22 145 / 0.15);
+      --accent: #56d37b;
+      --accent-dim: #56d37b26;
       --accent2: oklch(72% 0.22 195);
       --font-head: 'Bebas Neue', sans-serif;
       --font-body: 'Inter', sans-serif;
@@ -1682,12 +1678,6 @@
         gap: 18px 22px;
       }
 
-      /* Tweaks panel — float, smaller */
-      .tweaks-panel, [class*="tweaks"] {
-        max-width: calc(100vw - 24px) !important;
-        right: 12px !important;
-        bottom: 12px !important;
-      }
     }
 
     /* Very small phones (≤380px) */
@@ -2233,65 +2223,6 @@ function closeMenu(){
   Дизайн разработан <a href="https://t.me/cheb29" target="_blank" rel="noopener noreferrer" class="sub-footer-link">@cheb29</a>
 </div>
 
-<script type="text/babel">
-const { useState, useEffect } = React;
-
-function TweaksApp() {
-  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-    "accentColor": "#56d37b",
-    "darkMode": true,
-    "headingFont": "Bebas Neue",
-    "showStats": true
-  }/*EDITMODE-END*/;
-
-  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    root.style.setProperty('--accent', tweaks.accentColor);
-    root.style.setProperty('--accent-dim', tweaks.accentColor + '26');
-    root.style.setProperty('--bg', tweaks.darkMode ? '#0C0C0C' : '#F5F5F3');
-    root.style.setProperty('--bg2', tweaks.darkMode ? '#111111' : '#EBEBEA');
-    root.style.setProperty('--surface', tweaks.darkMode ? '#161616' : '#FFFFFF');
-    root.style.setProperty('--text', tweaks.darkMode ? '#F0F0EE' : '#0C0C0C');
-    root.style.setProperty('--muted', tweaks.darkMode ? 'rgba(240,240,238,0.45)' : 'rgba(12,12,12,0.5)');
-    root.style.setProperty('--border', tweaks.darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)');
-    root.style.setProperty('--font-head', `'${tweaks.headingFont}', sans-serif`);
-
-    const stats = document.querySelector('.hero-bottom-bar');
-    if (stats) stats.style.display = tweaks.showStats ? '' : 'none';
-  }, [tweaks]);
-
-  return (
-    <TweaksPanel title="Savva Team — Tweaks">
-      <TweakSection title="Цвет акцента">
-        <TweakColor id="accentColor" value={tweaks.accentColor} onChange={v => setTweak('accentColor', v)} />
-      </TweakSection>
-      <TweakSection title="Тема">
-        <TweakToggle id="darkMode" label="Тёмный режим" value={tweaks.darkMode} onChange={v => setTweak('darkMode', v)} />
-      </TweakSection>
-      <TweakSection title="Шрифт заголовков">
-        <TweakSelect id="headingFont"
-          value={tweaks.headingFont}
-          onChange={v => setTweak('headingFont', v)}
-          options={[
-            {value: 'Bebas Neue', label: 'Bebas Neue'},
-            {value: 'Impact', label: 'Impact'},
-            {value: 'Georgia', label: 'Georgia'},
-          ]}
-        />
-      </TweakSection>
-      <TweakSection title="Отображение статистики">
-        <TweakToggle id="showStats" label="Показывать цифры в Hero" value={tweaks.showStats} onChange={v => setTweak('showStats', v)} />
-      </TweakSection>
-    </TweaksPanel>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById('tweaks-root')).render(<TweaksApp />);
-</script>
-
-<div id="tweaks-root"></div>
 
 <script>
 // Custom Cursor
@@ -2357,50 +2288,45 @@ window.addEventListener('scroll', () => {
 
 // Video play
 // Hero + coach video loader (called from content injection script)
-async function loadVideos(cm) {
+function loadVideos(cm) {
   cm = cm || {};
-  const heroUrl  = cm.hero_video_url  || 'uploads/2026-05-01 07.51.23.mp4';
-  const savvaUrl = cm.coach1_video    || heroUrl;
-  const katitaUrl= cm.coach2_video    || 'uploads/coach-katita.mp4';
+  const heroUrl   = cm.hero_video_url || 'uploads/2026-05-01 07.51.23.mp4';
+  const savvaUrl  = cm.coach1_video   || heroUrl;
+  const katitaUrl = cm.coach2_video   || 'uploads/coach-katita.mp4';
 
-  function loadVideo(el, url, fallbackEl) {
+  // Hero video — direct src, HTTP range streaming
+  const heroVid = document.getElementById('heroVideo');
+  const heroFb  = document.getElementById('heroFallback');
+  if (heroVid) {
+    heroFb && (heroFb.style.display = 'none');
+    heroVid.addEventListener('error', () => {
+      heroVid.style.display = 'none';
+      heroFb && (heroFb.style.display = 'block');
+    }, { once: true });
+    heroVid.src = heroUrl;
+    heroVid.play().catch(() => {});
+  }
+
+  // Coach videos — lazy via IntersectionObserver
+  function lazyVideo(id, url) {
+    const el = document.getElementById(id);
     if (!el) return;
-    const showFb = () => { el.style.display='none'; if(fallbackEl) fallbackEl.style.display='flex'; };
-    el.addEventListener('error', showFb, { once: true });
-    fetch(url)
-      .then(r => r.ok ? r.blob() : Promise.reject())
-      .then(blob => { el.src = URL.createObjectURL(blob); el.play().catch(()=>{}); })
-      .catch(showFb);
+    const fb = el.parentElement.querySelector('.coach-video-fallback');
+    const load = () => {
+      el.addEventListener('error', () => { el.style.display='none'; fb && (fb.style.display='flex'); }, { once: true });
+      el.src = url;
+      el.play().catch(() => {});
+    };
+    if ('IntersectionObserver' in window) {
+      const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { load(); obs.disconnect(); } }, { rootMargin: '200px' });
+      obs.observe(el);
+    } else {
+      load();
+    }
   }
 
-  // Hero video
-  const heroVid  = document.getElementById('heroVideo');
-  const heroFb   = document.getElementById('heroFallback');
-  if (heroVid && heroFb) {
-    heroFb.style.display = 'none';
-    heroVid.addEventListener('stalled', () => { if(heroVid.readyState===0){heroVid.style.display='none';heroFb.style.display='block';} }, {once:true});
-    fetch(heroUrl)
-      .then(r => r.ok ? r.blob() : Promise.reject())
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        heroVid.src = url;
-        heroVid.play().catch(() => {});
-        // Reuse for Savva if same URL
-        if (savvaUrl === heroUrl) {
-          const savva = document.getElementById('coachVideoSavva');
-          if (savva) { savva.src = url; savva.play().catch(()=>{}); }
-        }
-      })
-      .catch(() => { heroVid.style.display='none'; heroFb.style.display='block'; });
-  }
-
-  // Savva video (if different from hero)
-  if (savvaUrl !== heroUrl) {
-    loadVideo(document.getElementById('coachVideoSavva'), savvaUrl, document.querySelector('#coachVideoSavva ~ .coach-video-fallback'));
-  }
-
-  // Katita video
-  loadVideo(document.getElementById('coachVideoKatita'), katitaUrl, document.querySelector('#coachVideoKatita + .coach-video-fallback, #coachVideoKatita ~ .coach-video-fallback'));
+  lazyVideo('coachVideoSavva',  savvaUrl);
+  lazyVideo('coachVideoKatita', katitaUrl);
 }
 
 // Hero parallax

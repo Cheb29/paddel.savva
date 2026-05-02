@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import Database from 'better-sqlite3';
 import multer from 'multer';
 import path from 'path';
@@ -178,6 +179,7 @@ function requireSecret(req, res, next) {
 
 // ── App ───────────────────────────────────────────────────────────────────────
 const app = express();
+app.use(compression());
 app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public'), {
