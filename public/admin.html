@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Savva Team — Админ-панель</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0C0C0C;
+      --bg2:       #111111;
+      --surface:   #161616;
+      --surface2:  #1C1C1C;
+      --border:    rgba(255,255,255,0.08);
+      --border2:   rgba(255,255,255,0.14);
+      --text:      #F0F0EE;
+      --muted:     rgba(240,240,238,0.45);
+      --accent:    oklch(72% 0.22 145);
+      --accent-dim:oklch(72% 0.22 145 / 0.15);
+      --accent2:   oklch(72% 0.22 195);
+      --danger:    oklch(62% 0.22 25);
+      --danger-dim:oklch(62% 0.22 25 / 0.15);
+      --font-head: 'Bebas Neue', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --radius:    10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Login ── */
+    #login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 16px;
+      padding: 48px 40px 40px;
+    }
+
+    .login-logo {
+      font-family: var(--font-head);
+      font-size: 32px;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    .login-logo span { color: var(--accent); }
+
+    .login-sub {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 36px;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .field-input {
+      width: 100%;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      padding: 13px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field-input:focus { border-color: var(--accent); }
+    .field-input::placeholder { color: var(--muted); }
+
+    .btn-primary {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      background: var(--accent);
+      color: #0C0C0C;
+      font-family: var(--font-head);
+      font-size: 18px;
+      letter-spacing: 0.08em;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-primary:active { transform: scale(0.98); }
+
+    .error-msg {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: var(--danger-dim);
+      border: 1px solid var(--danger);
+      border-radius: 8px;
+      color: var(--danger);
+      font-size: 13px;
+      display: none;
+    }
+    .error-msg.visible { display: block; }
+
+    /* ── Dashboard ── */
+    #dashboard { display: none; }
+
+    /* Top bar */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(12,12,12,0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 60px;
+      gap: 16px;
+    }
+
+    .topbar-logo {
+      font-family: var(--font-head);
+      font-size: 22px;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+    .topbar-logo span { color: var(--accent); }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+    }
+
+    .btn-sm {
+      padding: 7px 14px;
+      background: transparent;
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 13px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      white-space: nowrap;
+    }
+    .btn-sm:hover { color: var(--text); border-color: var(--accent); }
+
+    .btn-accent-sm {
+      padding: 7px 14px;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      color: var(--accent);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .btn-accent-sm:hover { background: oklch(72% 0.22 145 / 0.25); }
+
+    /* Stats */
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 32px 80px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-family: var(--font-head);
+      font-size: 42px;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      color: var(--text);
+    }
+
+    .stat-value.accent { color: var(--accent); }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 200px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 10px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--muted); }
+
+    .select-filter {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 13px;
+      padding: 10px 14px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      appearance: none;
+      padding-right: 32px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(240,240,238,0.45)' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+    .select-filter:focus { border-color: var(--accent); }
+
+    /* Table */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.15s;
+    }
+    th:hover { color: var(--text); }
+    th.sorted { color: var(--accent); }
+    th .sort-arrow { margin-left: 4px; opacity: 0.6; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+
+    td {
+      padding: 14px 16px;
+      font-size: 14px;
+      color: var(--text);
+      vertical-align: top;
+    }
+
+    td.id-cell {
+      color: var(--muted);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      width: 48px;
+    }
+
+    td.name-cell { font-weight: 500; }
+
+    td.phone-cell {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    td.phone-cell a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    td.phone-cell a:hover { text-decoration: underline; }
+
+    td.comment-cell {
+      color: var(--muted);
+      font-size: 13px;
+      max-width: 260px;
+    }
+
+    td.date-cell {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    td.ip-cell {
+      color: var(--muted);
+      font-size: 11px;
+      font-family: monospace;
+      white-space: nowrap;
+    }
+
+    /* Empty / loading */
+    .state-row td {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .page-info {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .page-btns { display: flex; gap: 6px; }
+
+    .page-btn {
+      min-width: 34px;
+      height: 34px;
+      padding: 0 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .page-btn:hover { color: var(--text); border-color: var(--accent); }
+    .page-btn.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .page-btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 14px;
+      color: var(--text);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none;
+      z-index: 9000;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 700px) {
+      .main-content { padding: 20px 16px 60px; }
+      .topbar { padding: 0 16px; }
+      .badge { display: none; }
+      td.ip-cell, th:nth-child(6) { display: none; }
+      td.comment-cell { max-width: 140px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Login Screen ── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">SAVVA<span>.</span>TEAM</div>
+    <div class="login-sub">Панель управления заявками</div>
+
+    <label class="field-label" for="secret-input">Пароль доступа</label>
+    <input
+      class="field-input"
+      id="secret-input"
+      type="password"
+      placeholder="Введите секретный ключ"
+      autocomplete="current-password"
+    />
+
+    <button class="btn-primary" id="login-btn">ВОЙТИ</button>
+    <div class="error-msg" id="login-error">Неверный пароль. Проверьте ADMIN_SECRET.</div>
+  </div>
+</div>
+
+<!-- ── Dashboard ── -->
+<div id="dashboard">
+  <nav class="topbar">
+    <div class="topbar-logo">SAVVA<span>.</span>ADMIN</div>
+    <div class="topbar-right">
+      <span class="badge" id="badge-total">— заявок</span>
+      <button class="btn-accent-sm" id="export-btn">↓ CSV</button>
+      <button class="btn-sm" id="logout-btn">Выйти</button>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Всего заявок</div>
+        <div class="stat-value accent" id="stat-total">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Сегодня</div>
+        <div class="stat-value" id="stat-today">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Последняя заявка</div>
+        <div class="stat-value" id="stat-last" style="font-size:18px;padding-top:8px;color:var(--muted)">—</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <input
+        class="search-input"
+        id="search-input"
+        type="search"
+        placeholder="Поиск по имени, телефону, комментарию…"
+      />
+      <select class="select-filter" id="date-filter">
+        <option value="all">Все время</option>
+        <option value="today">Сегодня</option>
+        <option value="week">Эта неделя</option>
+        <option value="month">Этот месяц</option>
+      </select>
+      <button class="btn-sm" id="refresh-btn">⟳ Обновить</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-col="id">#<span class="sort-arrow" id="arrow-id"></span></th>
+            <th data-col="name">Имя<span class="sort-arrow" id="arrow-name"></span></th>
+            <th data-col="phone">Телефон<span class="sort-arrow" id="arrow-phone"></span></th>
+            <th data-col="comment">Комментарий<span class="sort-arrow" id="arrow-comment"></span></th>
+            <th data-col="created_at">Дата<span class="sort-arrow" id="arrow-created_at"></span></th>
+            <th data-col="ip">IP<span class="sort-arrow" id="arrow-ip"></span></th>
+          </tr>
+        </thead>
+        <tbody id="leads-tbody">
+          <tr class="state-row">
+            <td colspan="6"><span class="spinner"></span> Загрузка…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <span class="page-info" id="page-info"></span>
+      <div class="page-btns" id="page-btns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const PER_PAGE = 25;
+
+  let allLeads = [];
+  let filtered = [];
+  let sortCol = 'id';
+  let sortDir = -1; // -1 = desc
+  let page = 1;
+  let secret = '';
+
+  // ── Utils ─────────────────────────────────────────────────────────────────
+
+  function toast(msg, ms = 2200) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), ms);
+  }
+
+  function formatDate(str) {
+    if (!str) return '—';
+    const d = new Date(str);
+    if (isNaN(d)) return str;
+    return d.toLocaleString('ru-RU', {
+      day: '2-digit', month: '2-digit', year: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  function formatDateShort(str) {
+    if (!str) return '—';
+    const d = new Date(str);
+    if (isNaN(d)) return str;
+    return d.toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+  }
+
+  function isToday(str) {
+    const d = new Date(str);
+    const n = new Date();
+    return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+  }
+
+  function isThisWeek(str) {
+    const d = new Date(str);
+    const now = new Date();
+    const start = new Date(now); start.setDate(now.getDate() - now.getDay() + 1); start.setHours(0,0,0,0);
+    return d >= start;
+  }
+
+  function isThisMonth(str) {
+    const d = new Date(str);
+    const n = new Date();
+    return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth();
+  }
+
+  function esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('secret-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    secret = '';
+    allLeads = [];
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('secret-input').value = '';
+  });
+
+  async function doLogin() {
+    const val = document.getElementById('secret-input').value.trim();
+    if (!val) return;
+    const errEl = document.getElementById('login-error');
+    errEl.classList.remove('visible');
+
+    try {
+      const res = await fetch(`/api/leads?secret=${encodeURIComponent(val)}`);
+      if (res.status === 401) {
+        errEl.classList.add('visible');
+        return;
+      }
+      const data = await res.json();
+      secret = val;
+      allLeads = data;
+      showDashboard();
+    } catch {
+      errEl.textContent = 'Ошибка соединения с сервером.';
+      errEl.classList.add('visible');
+    }
+  }
+
+  // ── Dashboard ─────────────────────────────────────────────────────────────
+
+  function showDashboard() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    applyFiltersAndRender();
+  }
+
+  // Stats
+  function renderStats() {
+    const total = allLeads.length;
+    const todayCount = allLeads.filter(l => isToday(l.created_at)).length;
+    const last = allLeads[0];
+
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-today').textContent = todayCount;
+    document.getElementById('stat-last').textContent = last ? formatDateShort(last.created_at) : '—';
+    document.getElementById('badge-total').textContent = `${total} заявок`;
+  }
+
+  // Filtering
+  function applyFiltersAndRender() {
+    const q = document.getElementById('search-input').value.trim().toLowerCase();
+    const period = document.getElementById('date-filter').value;
+
+    filtered = allLeads.filter(l => {
+      // Date filter
+      if (period === 'today' && !isToday(l.created_at)) return false;
+      if (period === 'week'  && !isThisWeek(l.created_at)) return false;
+      if (period === 'month' && !isThisMonth(l.created_at)) return false;
+
+      // Search
+      if (q) {
+        const hay = [l.name, l.phone, l.comment, l.ip].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    // Sort
+    filtered.sort((a, b) => {
+      let va = a[sortCol] ?? '';
+      let vb = b[sortCol] ?? '';
+      if (sortCol === 'id') { va = +va; vb = +vb; }
+      if (va < vb) return sortDir;
+      if (va > vb) return -sortDir;
+      return 0;
+    });
+
+    page = 1;
+    renderStats();
+    renderTable();
+    renderPagination();
+    renderSortArrows();
+  }
+
+  // Sorting
+  document.querySelectorAll('th[data-col]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (sortCol === col) sortDir *= -1;
+      else { sortCol = col; sortDir = -1; }
+      renderTable();
+      renderPagination();
+      renderSortArrows();
+    });
+  });
+
+  function renderSortArrows() {
+    document.querySelectorAll('th[data-col]').forEach(th => {
+      const col = th.dataset.col;
+      const arrow = th.querySelector('.sort-arrow');
+      th.classList.toggle('sorted', col === sortCol);
+      arrow.textContent = col === sortCol ? (sortDir === -1 ? ' ↓' : ' ↑') : '';
+    });
+  }
+
+  // Table rows
+  function renderTable() {
+    const tbody = document.getElementById('leads-tbody');
+    const start = (page - 1) * PER_PAGE;
+    const slice = filtered.slice(start, start + PER_PAGE);
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr class="state-row"><td colspan="6">Заявок не найдено</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = slice.map(l => `
+      <tr>
+        <td class="id-cell">${esc(l.id)}</td>
+        <td class="name-cell">${esc(l.name)}</td>
+        <td class="phone-cell"><a href="tel:${esc(l.phone)}">${esc(l.phone)}</a></td>
+        <td class="comment-cell">${l.comment ? esc(l.comment) : '<span style="opacity:.35">—</span>'}</td>
+        <td class="date-cell">${formatDate(l.created_at)}</td>
+        <td class="ip-cell">${esc(l.ip || '—')}</td>
+      </tr>
+    `).join('');
+  }
+
+  // Pagination
+  function renderPagination() {
+    const total = filtered.length;
+    const pages = Math.ceil(total / PER_PAGE);
+    const start = (page - 1) * PER_PAGE + 1;
+    const end = Math.min(page * PER_PAGE, total);
+
+    document.getElementById('page-info').textContent =
+      total > 0 ? `${start}–${end} из ${total}` : '';
+
+    const container = document.getElementById('page-btns');
+    if (pages <= 1) { container.innerHTML = ''; return; }
+
+    let html = `<button class="page-btn" id="btn-prev" ${page === 1 ? 'disabled' : ''}>‹</button>`;
+
+    for (let i = 1; i <= pages; i++) {
+      if (pages > 7 && i > 2 && i < pages - 1 && Math.abs(i - page) > 1) {
+        if (i === 3 || i === pages - 2) html += `<button class="page-btn" disabled>…</button>`;
+        continue;
+      }
+      html += `<button class="page-btn ${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`;
+    }
+
+    html += `<button class="page-btn" id="btn-next" ${page === pages ? 'disabled' : ''}>›</button>`;
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-page]').forEach(btn => {
+      btn.addEventListener('click', () => { page = +btn.dataset.page; renderTable(); renderPagination(); });
+    });
+    container.querySelector('#btn-prev')?.addEventListener('click', () => { page--; renderTable(); renderPagination(); });
+    container.querySelector('#btn-next')?.addEventListener('click', () => { page++; renderTable(); renderPagination(); });
+  }
+
+  // Search & filter
+  document.getElementById('search-input').addEventListener('input', applyFiltersAndRender);
+  document.getElementById('date-filter').addEventListener('change', applyFiltersAndRender);
+
+  // Refresh
+  document.getElementById('refresh-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('refresh-btn');
+    btn.textContent = '…';
+    try {
+      const res = await fetch(`/api/leads?secret=${encodeURIComponent(secret)}`);
+      if (!res.ok) { toast('Ошибка обновления'); return; }
+      allLeads = await res.json();
+      applyFiltersAndRender();
+      toast('Обновлено');
+    } catch {
+      toast('Ошибка соединения');
+    } finally {
+      btn.textContent = '⟳ Обновить';
+    }
+  });
+
+  // Export CSV
+  document.getElementById('export-btn').addEventListener('click', () => {
+    const rows = [['ID','Имя','Телефон','Комментарий','Дата','IP']];
+    filtered.forEach(l => rows.push([l.id, l.name, l.phone, l.comment ?? '', l.created_at, l.ip ?? '']));
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `savvateam-leads-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    toast('CSV скачан');
+  });
+</script>
+</body>
+</html>

@@ -96,9 +96,14 @@ app.get('/api/leads', (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   const leads = db.prepare(
-    'SELECT id, name, phone, comment, ip, created_at FROM leads ORDER BY id DESC LIMIT 200'
+    'SELECT id, name, phone, comment, ip, created_at FROM leads ORDER BY id DESC LIMIT 1000'
   ).all();
   res.json(leads);
+});
+
+// ── GET /admin — удобный алиас без .html ─────────────────────────────────────
+app.get('/admin', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // ── SPA fallback — всё остальное отдаём index.html ──────────────────────────
