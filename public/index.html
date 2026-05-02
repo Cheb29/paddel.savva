@@ -2494,11 +2494,11 @@ document.getElementById('contactSubmit').addEventListener('click', async () => {
     // Медиа: фото тренеров в слайдере (data-coach-photo / data-coach-photo2)
     document.querySelectorAll('[data-coach-photo]').forEach(el => {
       const key = 'coach' + el.dataset.coachPhoto + '_photo';
-      if (c[key]) el.style.backgroundImage = `url('${c[key]}')`;
+      if (key in c) el.style.backgroundImage = c[key] ? `url('${c[key]}')` : 'none';
     });
     document.querySelectorAll('[data-coach-photo2]').forEach(el => {
       const key = 'coach' + el.dataset.coachPhoto2 + '_photo2';
-      if (c[key]) el.style.backgroundImage = `url('${c[key]}')`;
+      if (key in c) el.style.backgroundImage = c[key] ? `url('${c[key]}')` : 'none';
     });
 
     // Запуск видео с URL из content API
