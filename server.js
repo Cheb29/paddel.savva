@@ -134,10 +134,13 @@ const CONTENT_DEFAULTS = {
   showreel_poster:   '',
   showreel_caption:  'Один день в академии',
   coach1_photo:      'uploads/саваа.jpeg',
+  coach1_photo2:     'uploads/photo_2026-05-01 23.25.57.jpeg',
   coach1_video:      'uploads/2026-05-01 07.51.23.mp4',
   coach2_photo:      'uploads/Катита 1.PNG',
+  coach2_photo2:     'uploads/Катита 2.PNG',
   coach2_video:      'uploads/coach-katita.mp4',
   coach3_photo:      'uploads/Елена 1.PNG',
+  coach3_photo2:     'uploads/Елена 2.PNG',
   coach3_video:      '',
 };
 

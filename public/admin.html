@@ -296,9 +296,9 @@ const SEED={
     {id:3,author:'Дмитрий Волков',role:'Ученик · 8 месяцев',text:'Записался на пробное, остался навсегда. Savva Team — это семья, где тебя поддерживают и помогают расти. Выиграл первый турнир уже через 4 месяца!'},
   ],
   coaches:[
-    {id:1,name:'Савва Шехватов',role:'Head Coach',eyebrow:'01 · Head Coach',bio:'Основатель академии. 12 лет профессионального опыта в теннисе и паделе. Сертифицированный тренер FIP. Обучает взрослых и игроков уровня advanced. Автор методики «Техника через логику».',stat1_num:'12',stat1_label:'лет опыта',stat2_num:'FIP',stat2_label:'сертификат',stat3_num:'A1',stat3_label:'уровень',photo:'uploads/саваа.jpeg',video:''},
-    {id:2,name:'Катита Леонова',role:'Junior Coach',eyebrow:'02 · Junior Coach',bio:'Смэш — это не просто удар. Это моя подпись. Моё «ало». Я люблю его не за грубую силу, а за ту самую секунду абсолютной власти над мячом — когда соперник кидает свечку в надежде отдышаться, и я слышу зов.',stat1_num:'9',stat1_label:'лет опыта',stat2_num:'P1',stat2_label:'рейтинг',stat3_num:'B/A',stat3_label:'уровень',photo:'uploads/Катита 1.PNG',video:''},
-    {id:3,name:'Елена Алешина',role:'Junior Coach',eyebrow:'03 · Junior Coach',bio:'Работает с детьми от 6 лет и начинающими взрослыми. Бывший игрок юниорской сборной. Главный принцип — игровой подход и развитие координации.',stat1_num:'7',stat1_label:'лет опыта',stat2_num:'6+',stat2_label:'возраст',stat3_num:'C/B',stat3_label:'уровень',photo:'uploads/Елена 1.PNG',video:''},
+    {id:1,name:'Савва Шехватов',role:'Head Coach',eyebrow:'01 · Head Coach',bio:'Основатель академии. 12 лет профессионального опыта в теннисе и паделе. Сертифицированный тренер FIP. Обучает взрослых и игроков уровня advanced. Автор методики «Техника через логику».',stat1_num:'12',stat1_label:'лет опыта',stat2_num:'FIP',stat2_label:'сертификат',stat3_num:'A1',stat3_label:'уровень',photo:'uploads/саваа.jpeg',photo2:'uploads/photo_2026-05-01 23.25.57.jpeg',video:''},
+    {id:2,name:'Катита Леонова',role:'Junior Coach',eyebrow:'02 · Junior Coach',bio:'Смэш — это не просто удар. Это моя подпись. Моё «ало». Я люблю его не за грубую силу, а за ту самую секунду абсолютной власти над мячом — когда соперник кидает свечку в надежде отдышаться, и я слышу зов.',stat1_num:'9',stat1_label:'лет опыта',stat2_num:'P1',stat2_label:'рейтинг',stat3_num:'B/A',stat3_label:'уровень',photo:'uploads/Катита 1.PNG',photo2:'uploads/Катита 2.PNG',video:''},
+    {id:3,name:'Елена Алешина',role:'Junior Coach',eyebrow:'03 · Junior Coach',bio:'Работает с детьми от 6 лет и начинающими взрослыми. Бывший игрок юниорской сборной. Главный принцип — игровой подход и развитие координации.',stat1_num:'7',stat1_label:'лет опыта',stat2_num:'6+',stat2_label:'возраст',stat3_num:'C/B',stat3_label:'уровень',photo:'uploads/Елена 1.PNG',photo2:'uploads/Елена 2.PNG',video:''},
   ],
   texts:{
     hero_eyebrow:'Академия падел тенниса',
@@ -392,7 +392,7 @@ async function fetchLeadsAndStats(secret){
     // Мержим все поля тренеров из content API
     if(state.coaches) state.coaches.forEach(co=>{
       const n = co.id;
-      const fields = ['name','eyebrow','bio','photo','video',
+      const fields = ['name','eyebrow','bio','photo','photo2','video',
         'stat1_num','stat1_label','stat2_num','stat2_label','stat3_num','stat3_label'];
       fields.forEach(f=>{ const v=c['coach'+n+'_'+f]; if(v!=null) co[f]=v; });
     });
@@ -1029,9 +1029,14 @@ function renderCoaches(c){
          </div>
          <div style="flex:1;min-width:0">
            <h3 style="margin-bottom:2px">${escapeHtml(co.name||'—')}</h3>
-           <div class="editor-cat">${escapeHtml(co.role||'')} · ${escapeHtml(co.level||'')}</div>
-           <div style="margin-top:10px"><label class="btn" style="display:inline-flex;cursor:pointer;font-size:11px">↑ Фото<input type="file" accept="image/*" style="display:none" onchange="handleCoachPhoto(event,${co.id})"/></label>
-           ${co.photo?`<button class="btn btn-danger" style="font-size:11px;margin-left:6px" onclick="clearCoachPhoto(${co.id})">✕</button>`:''}</div>
+           <div class="editor-cat">${escapeHtml(co.eyebrow||co.role||'')}</div>
+           <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+             <label class="btn" style="display:inline-flex;cursor:pointer;font-size:11px">↑ Фото 1 (карусель)<input type="file" accept="image/*" style="display:none" onchange="handleCoachPhoto(event,${co.id})"/></label>
+             ${co.photo?`<button class="btn btn-danger" style="font-size:11px" onclick="clearCoachPhoto(${co.id})">✕</button>`:''}
+             <label class="btn" style="display:inline-flex;cursor:pointer;font-size:11px">↑ Фото 2 (карусель)<input type="file" accept="image/*" style="display:none" onchange="handleCoachPhoto2(event,${co.id})"/></label>
+             ${co.photo2?`<button class="btn btn-danger" style="font-size:11px" onclick="clearCoachPhoto2(${co.id})">✕</button>`:''}
+           </div>
+           ${co.photo2?`<div style="margin-top:6px;width:60px;height:60px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);overflow:hidden;background-image:url('${co.photo2}');background-size:cover;background-position:center top"></div>`:''}
          </div>
        </div>
        <div class="field"><label>Имя (Фамилия отдельным словом в конце)</label><input data-cid="${co.id}" data-key="name" value="${escapeAttr(co.name||'')}"/></div>
@@ -1045,7 +1050,10 @@ function renderCoaches(c){
          <div class="field"><label>Стат 2 — подпись</label><input data-cid="${co.id}" data-key="stat2_label" value="${escapeAttr(co.stat2_label||'')}"/></div>
          <div class="field"><label>Стат 3 — подпись</label><input data-cid="${co.id}" data-key="stat3_label" value="${escapeAttr(co.stat3_label||'')}"/></div>
        </div>
-       <div class="field"><label>URL фото (опционально)</label><input data-cid="${co.id}" data-key="photo" value="${escapeAttr(co.photo&&!co.photo.startsWith('data:')?co.photo:'')}" placeholder="https://... или загрузите выше"/></div>
+       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+         <div class="field"><label>URL фото 1</label><input data-cid="${co.id}" data-key="photo" value="${escapeAttr(co.photo&&!co.photo.startsWith('data:')?co.photo:'')}" placeholder="uploads/..."/></div>
+         <div class="field"><label>URL фото 2 (карусель)</label><input data-cid="${co.id}" data-key="photo2" value="${escapeAttr(co.photo2&&!co.photo2.startsWith('data:')?co.photo2:'')}" placeholder="uploads/..."/></div>
+       </div>
        <div style="border-top:1px solid var(--border);margin:14px 0 8px;padding-top:14px"><div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px">▶ Видео тренера</div>
          ${co.video?`<div style="background:#000;border-radius:8px;aspect-ratio:16/9;overflow:hidden;margin-bottom:10px;border:1px solid var(--border)">${isYouTube(co.video)?`<iframe src="${escapeAttr(ytEmbed(co.video))}" style="width:100%;height:100%;border:0" allowfullscreen></iframe>`:`<video src="${escapeAttr(co.video)}" controls style="width:100%;height:100%;object-fit:cover"></video>`}</div>`:''}
          <div class="field"><label>URL видео (mp4 / YouTube)</label><input data-cid="${co.id}" data-key="video" value="${escapeAttr(co.video&&!co.video.startsWith('data:')?co.video:'')}" placeholder="https://..."/></div>
@@ -1073,6 +1081,7 @@ async function saveCoach(id){
     ['coach'+n+'_stat3_num']:co.stat3_num||'',
     ['coach'+n+'_stat3_label']:co.stat3_label||'',
     ['coach'+n+'_photo']:    co.photo||'',
+    ['coach'+n+'_photo2']:   co.photo2||'',
     ['coach'+n+'_video']:    co.video||'',
   };
   await fetch('/api/content?secret='+encodeURIComponent(adminSecret),{
@@ -1121,6 +1130,26 @@ async function clearCoachPhoto(id){
   co.photo='';
   saveStore();
   await fetch('/api/content?secret='+encodeURIComponent(adminSecret),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({['coach'+id+'_photo']:''})});
+  renderCoaches(document.getElementById('pageContent'));
+}
+async function handleCoachPhoto2(e,id){
+  const f=e.target.files[0];if(!f)return;
+  const co=state.coaches.find(x=>x.id===id);if(!co)return;
+  toast('Загрузка...');
+  try{
+    const url=await uploadToServer(f);
+    co.photo2=url;
+    saveStore();
+    await fetch('/api/content?secret='+encodeURIComponent(adminSecret),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({['coach'+id+'_photo2']:url})});
+    toast('Фото 2 загружено');
+    renderCoaches(document.getElementById('pageContent'));
+  }catch(err){toast('Ошибка загрузки')}
+}
+async function clearCoachPhoto2(id){
+  const co=state.coaches.find(x=>x.id===id);if(!co)return;
+  co.photo2='';
+  saveStore();
+  await fetch('/api/content?secret='+encodeURIComponent(adminSecret),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({['coach'+id+'_photo2']:''})});
   renderCoaches(document.getElementById('pageContent'));
 }
 
