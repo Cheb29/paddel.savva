@@ -1,5 +1,6 @@
 import express from 'express';
 import Database from 'better-sqlite3';
+import multer from 'multer';
 import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -10,6 +11,29 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const TG_CHAT = process.env.TELEGRAM_CHAT_ID || '';
+
+// ── Uploads ───────────────────────────────────────────────────────────────────
+const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+if (!existsSync(UPLOADS_DIR)) mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const base = path.basename(file.originalname, ext)
+      .replace(/[^a-zA-Zа-яА-ЯёЁ0-9._-]/g, '_')
+      .slice(0, 60);
+    cb(null, `${Date.now()}_${base}${ext}`);
+  },
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 200 * 1024 * 1024 }, // 200 МБ
+  fileFilter: (_req, file, cb) => {
+    if (/^(image|video)\//.test(file.mimetype)) cb(null, true);
+    else cb(new Error('Разрешены только изображения и видео'));
+  },
+});
 
 // ── Database ─────────────────────────────────────────────────────────────────
 const DB_DIR = path.join(__dirname, 'db');
@@ -85,6 +109,17 @@ const CONTENT_DEFAULTS = {
   contact_hours_week: 'Пн–Пт: 08:00 – 22:00',
   contact_hours_weekend: 'Сб–Вс: 09:00 – 20:00',
   footer_copy: '© 2026 Savva Team. Все права защищены.',
+  // media
+  hero_video_url:    'uploads/2026-05-01 07.51.23.mp4',
+  showreel_url:      'uploads/showreel.mp4',
+  showreel_poster:   '',
+  showreel_caption:  'Один день в академии',
+  coach1_photo:      'uploads/саваа.jpeg',
+  coach1_video:      'uploads/2026-05-01 07.51.23.mp4',
+  coach2_photo:      'uploads/Катита 1.PNG',
+  coach2_video:      'uploads/coach-katita.mp4',
+  coach3_photo:      'uploads/Елена 1.PNG',
+  coach3_video:      '',
 };
 
 // Seed defaults (INSERT OR IGNORE — не затирает сохранённые значения)
@@ -236,6 +271,15 @@ app.post('/api/content', requireSecret, (req, res) => {
   });
   save();
   res.json({ ok: true });
+});
+
+// ── POST /api/upload ──────────────────────────────────────────────────────────
+app.post('/api/upload', requireSecret, (req, res) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    if (!req.file) return res.status(400).json({ error: 'Файл не получен' });
+    res.json({ ok: true, url: `uploads/${req.file.filename}` });
+  });
 });
 
 // ── GET /admin ─────────────────────────────────────────────────────────────────

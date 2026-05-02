@@ -365,6 +365,14 @@ function updateBadges(){
 }
 
 /* ============= LOGIN ============= */
+async function uploadToServer(file){
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch('/api/upload?secret='+encodeURIComponent(adminSecret), { method:'POST', body:fd });
+  if(!res.ok) throw new Error('Upload failed');
+  return (await res.json()).url;
+}
+
 async function fetchLeadsAndStats(secret){
   const [leadsRes, statsRes, contentRes] = await Promise.all([
     fetch('/api/leads?secret='+encodeURIComponent(secret)),
@@ -375,10 +383,17 @@ async function fetchLeadsAndStats(secret){
   serverLeads = normalizeLeads(await leadsRes.json());
   if(statsRes.ok) serverStats = await statsRes.json();
   if(contentRes.ok){
-    const serverContent = await contentRes.json();
-    // Мержим серверный контент в state.texts (сервер приоритетнее)
+    const c = await contentRes.json();
     if(!state.texts) state.texts = {};
-    Object.assign(state.texts, serverContent);
+    Object.assign(state.texts, c);
+    // Мержим медиа-ключи в state.media
+    if(!state.media) state.media = {};
+    ['hero_video_url','showreel_url','showreel_poster','showreel_caption'].forEach(k=>{ if(c[k]!=null) state.media[k]=c[k]; });
+    // Мержим фото/видео тренеров
+    if(state.coaches) state.coaches.forEach(co=>{
+      if(c['coach'+co.id+'_photo']!=null) co.photo = c['coach'+co.id+'_photo'];
+      if(c['coach'+co.id+'_video']!=null) co.video = c['coach'+co.id+'_video'];
+    });
     saveStore();
   }
   return true;
@@ -949,28 +964,52 @@ function renderMedia(c){
 }
 function isYouTube(u){return /youtube\.com|youtu\.be/.test(u||'')}
 function ytEmbed(u){const m=u.match(/(?:youtu\.be\/|v=)([\w-]+)/);return m?`https://www.youtube.com/embed/${m[1]}`:u}
-function saveMedia(){
+async function saveMedia(){
   if(!state.media)state.media={};
   ['showreel_url','showreel_poster','showreel_caption','hero_video_url'].forEach(k=>{
     const el=document.getElementById('med_'+k);if(el)state.media[k]=el.value;
   });
-  try{saveStore();toast('Медиа сохранено');renderMedia(document.getElementById('pageContent'))}
-  catch(e){toast('Файл слишком большой для localStorage — используйте URL')}
+  saveStore();
+  await fetch('/api/content?secret='+encodeURIComponent(adminSecret),{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      hero_video_url:   state.media.hero_video_url||'',
+      showreel_url:     state.media.showreel_url||'',
+      showreel_poster:  state.media.showreel_poster||'',
+      showreel_caption: state.media.showreel_caption||'',
+    })
+  });
+  toast('Медиа сохранено');
+  renderMedia(document.getElementById('pageContent'));
 }
-function clearMedia(key){state.media[key]='';saveStore();renderMedia(document.getElementById('pageContent'));toast('Удалено')}
-function handleVideoUpload(e,key){
-  const f=e.target.files[0];if(!f)return;
-  if(f.size>6*1024*1024){toast('Файл больше 6 МБ — используйте внешний URL');return}
-  const r=new FileReader();r.onload=()=>{
-    state.media[key]=r.result;
-    try{saveStore();toast('Видео загружено');renderMedia(document.getElementById('pageContent'))}
-    catch(err){toast('Не помещается в хранилище')}
-  };r.readAsDataURL(f);
+async function clearMedia(key){
+  state.media[key]='';
+  saveStore();
+  await fetch('/api/content?secret='+encodeURIComponent(adminSecret),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[key]:''})});
+  renderMedia(document.getElementById('pageContent'));
+  toast('Удалено');
 }
-function handleImageUpload(e,key){
+async function handleVideoUpload(e,key){
   const f=e.target.files[0];if(!f)return;
-  if(f.size>2*1024*1024){toast('Картинка больше 2 МБ');return}
-  const r=new FileReader();r.onload=()=>{state.media[key]=r.result;saveStore();toast('Загружено');renderMedia(document.getElementById('pageContent'))};r.readAsDataURL(f);
+  toast('Загрузка...');
+  try{
+    const url=await uploadToServer(f);
+    state.media[key]=url;
+    saveStore();
+    toast('Видео загружено на сервер');
+    renderMedia(document.getElementById('pageContent'));
+  }catch(err){toast('Ошибка загрузки')}
+}
+async function handleImageUpload(e,key){
+  const f=e.target.files[0];if(!f)return;
+  toast('Загрузка...');
+  try{
+    const url=await uploadToServer(f);
+    state.media[key]=url;
+    saveStore();
+    toast('Изображение загружено');
+    renderMedia(document.getElementById('pageContent'));
+  }catch(err){toast('Ошибка загрузки')}
 }
 
 /* ============= COACHES ============= */
@@ -1006,38 +1045,62 @@ function renderCoaches(c){
        <div class="editor-actions"><button class="btn btn-primary" onclick="saveCoach(${co.id})">Сохранить</button><button class="btn btn-danger" onclick="delCoach(${co.id})">Удалить</button></div>
      </div>`).join('')}</div>`;
 }
-function saveCoach(id){
+async function saveCoach(id){
   const co=state.coaches.find(x=>x.id===id);if(!co)return;
   document.querySelectorAll(`[data-cid="${id}"]`).forEach(i=>{
     if(i.dataset.key==='photo'||i.dataset.key==='video'){if(i.value)co[i.dataset.key]=i.value}
     else co[i.dataset.key]=i.value;
   });
-  saveStore();renderCoaches(document.getElementById('pageContent'));toast('Сохранено');
+  saveStore();
+  // Сохраняем фото/видео в content API чтобы сайт подхватил
+  await fetch('/api/content?secret='+encodeURIComponent(adminSecret),{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({['coach'+id+'_photo']:co.photo||'',['coach'+id+'_video']:co.video||''})
+  });
+  renderCoaches(document.getElementById('pageContent'));
+  toast('Сохранено');
 }
 function delCoach(id){if(!confirm('Удалить тренера?'))return;state.coaches=state.coaches.filter(c=>c.id!==id);saveStore();renderCoaches(document.getElementById('pageContent'));toast('Удалено')}
 function addCoach(){const id=Math.max(0,...state.coaches.map(c=>c.id))+1;state.coaches.push({id,name:'Новый тренер',role:'Junior Coach',level:'B',bio:'',photo:'',video:''});saveStore();renderCoaches(document.getElementById('pageContent'))}
-function handleCoachVideo(e,id){
+async function handleCoachVideo(e,id){
   const f=e.target.files[0];if(!f)return;
-  if(f.size>6*1024*1024){toast('Видео больше 6 МБ — используйте URL');return}
-  const r=new FileReader();r.onload=()=>{
-    const co=state.coaches.find(x=>x.id===id);if(!co)return;
-    co.video=r.result;
-    try{saveStore();toast('Видео загружено');renderCoaches(document.getElementById('pageContent'))}
-    catch(err){toast('Не помещается в хранилище — используйте URL')}
-  };r.readAsDataURL(f);
+  const co=state.coaches.find(x=>x.id===id);if(!co)return;
+  toast('Загрузка...');
+  try{
+    const url=await uploadToServer(f);
+    co.video=url;
+    saveStore();
+    toast('Видео загружено на сервер');
+    renderCoaches(document.getElementById('pageContent'));
+  }catch(err){toast('Ошибка загрузки')}
 }
-function clearCoachVideo(id){const co=state.coaches.find(x=>x.id===id);if(!co)return;co.video='';saveStore();renderCoaches(document.getElementById('pageContent'));toast('Видео удалено')}
-function handleCoachPhoto(e,id){
+async function clearCoachVideo(id){
+  const co=state.coaches.find(x=>x.id===id);if(!co)return;
+  co.video='';
+  saveStore();
+  await fetch('/api/content?secret='+encodeURIComponent(adminSecret),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({['coach'+id+'_video']:''})});
+  renderCoaches(document.getElementById('pageContent'));
+  toast('Видео удалено');
+}
+async function handleCoachPhoto(e,id){
   const f=e.target.files[0];if(!f)return;
-  if(f.size>2*1024*1024){toast('Фото больше 2 МБ — сжмите или используйте URL');return}
-  const r=new FileReader();r.onload=()=>{
-    const co=state.coaches.find(x=>x.id===id);if(!co)return;
-    co.photo=r.result;
-    try{saveStore();toast('Фото загружено');renderCoaches(document.getElementById('pageContent'))}
-    catch(err){toast('Не помещается в хранилище — используйте URL')}
-  };r.readAsDataURL(f);
+  const co=state.coaches.find(x=>x.id===id);if(!co)return;
+  toast('Загрузка...');
+  try{
+    const url=await uploadToServer(f);
+    co.photo=url;
+    saveStore();
+    toast('Фото загружено на сервер');
+    renderCoaches(document.getElementById('pageContent'));
+  }catch(err){toast('Ошибка загрузки')}
 }
-function clearCoachPhoto(id){const co=state.coaches.find(x=>x.id===id);if(!co)return;co.photo='';saveStore();renderCoaches(document.getElementById('pageContent'))}
+async function clearCoachPhoto(id){
+  const co=state.coaches.find(x=>x.id===id);if(!co)return;
+  co.photo='';
+  saveStore();
+  await fetch('/api/content?secret='+encodeURIComponent(adminSecret),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({['coach'+id+'_photo']:''})});
+  renderCoaches(document.getElementById('pageContent'));
+}
 
 /* ============= UTILS ============= */
 function escapeHtml(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
