@@ -1,826 +1,1030 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Savva Team — Админ-панель</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Savva Team — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0c0c; --bg2:#141414; --surface:#1a1a1a; --surface2:#222;
+  --border:#2a2a2a; --border2:#363636;
+  --text:#f0f0f0; --muted:#888; --muted2:#aaa;
+  --accent:oklch(72% 0.22 145);
+  --accent-dim:oklch(72% 0.22 145 / 0.15);
+  --accent-soft:oklch(72% 0.22 145 / 0.08);
+  --danger:#ef5b5b; --warn:#e2b144; --info:#5b9cef;
+  --font-head:'Big Shoulders Display',sans-serif;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;color:inherit}
 
-    :root {
-      --bg:        #0C0C0C;
-      --bg2:       #111111;
-      --surface:   #161616;
-      --surface2:  #1C1C1C;
-      --border:    rgba(255,255,255,0.08);
-      --border2:   rgba(255,255,255,0.14);
-      --text:      #F0F0EE;
-      --muted:     rgba(240,240,238,0.45);
-      --accent:    oklch(72% 0.22 145);
-      --accent-dim:oklch(72% 0.22 145 / 0.15);
-      --accent2:   oklch(72% 0.22 195);
-      --danger:    oklch(62% 0.22 25);
-      --danger-dim:oklch(62% 0.22 25 / 0.15);
-      --font-head: 'Bebas Neue', sans-serif;
-      --font-body: 'Inter', sans-serif;
-      --radius:    10px;
-    }
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px}
+#loginScreen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 30%,oklch(72% 0.22 145 / 0.12),transparent 70%);pointer-events:none}
+.login-card{position:relative;width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:40px 32px;box-shadow:0 30px 80px rgba(0,0,0,0.5)}
+.login-logo{font-family:var(--font-head);font-size:26px;font-weight:800;letter-spacing:0.04em;margin-bottom:6px}
+.login-logo span{color:var(--accent)}
+.login-sub{color:var(--muted);font-size:12px;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:32px}
+.login-field{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.login-field label{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.login-field input{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s}
+.login-field input:focus{border-color:var(--accent)}
+.login-btn{width:100%;background:var(--accent);color:var(--bg);border:none;padding:14px;border-radius:8px;font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin-top:10px;transition:transform .2s,box-shadow .2s}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px oklch(72% 0.22 145 / 0.4)}
+.login-error{margin-top:12px;font-size:12px;color:var(--danger);text-align:center;display:none}
+.login-error.show{display:block}
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font-body);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+/* LAYOUT */
+#app{display:flex;min-height:100vh}
+#app.hidden{display:none}
 
-    /* ── Login ── */
-    #login-screen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 24px;
-    }
+/* SIDEBAR */
+.sidebar{width:240px;background:var(--bg2);border-right:1px solid var(--border);padding:22px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+.sidebar-logo{font-family:var(--font-head);font-size:22px;font-weight:800;letter-spacing:0.04em;padding:6px 10px 22px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.sidebar-logo span{color:var(--accent)}
+.nav-section{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);padding:14px 10px 6px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;color:var(--muted2);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;border:none;background:transparent;width:100%;text-align:left}
+.nav-item:hover{background:var(--surface);color:var(--text)}
+.nav-item.active{background:var(--accent-dim);color:var(--accent)}
+.nav-item .icon{width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;opacity:.85}
+.nav-item .badge{margin-left:auto;background:var(--accent);color:var(--bg);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:18px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:14px 10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);color:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.user-info{display:flex;flex-direction:column;line-height:1.3;font-size:12px}
+.user-info strong{color:var(--text);font-size:13px}
+.user-info span{color:var(--muted);font-size:11px}
+.logout-btn{margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:6px;font-size:12px;display:flex;align-items:center;justify-content:center}
+.logout-btn:hover{color:var(--accent);border-color:var(--accent)}
 
-    .login-card {
-      width: 100%;
-      max-width: 420px;
-      background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: 16px;
-      padding: 48px 40px 40px;
-    }
+/* MAIN */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;background:rgba(12,12,12,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:20px;z-index:10}
+.topbar-search{flex:1;max-width:480px;position:relative}
+.topbar-search input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px 10px 38px;font-size:13px;color:var(--text);outline:none;transition:border-color .2s}
+.topbar-search input:focus{border-color:var(--accent)}
+.topbar-search::before{content:'⌕';position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px}
+.topbar-actions{margin-left:auto;display:flex;align-items:center;gap:10px}
+.icon-btn{background:var(--surface);border:1px solid var(--border);width:36px;height:36px;border-radius:8px;color:var(--text);display:flex;align-items:center;justify-content:center;font-size:15px;position:relative;transition:all .2s}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+.icon-btn .dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
 
-    .login-logo {
-      font-family: var(--font-head);
-      font-size: 32px;
-      letter-spacing: 0.06em;
-      margin-bottom: 6px;
-    }
-    .login-logo span { color: var(--accent); }
+.content{padding:28px 32px 60px;flex:1}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;gap:20px;flex-wrap:wrap}
+.page-title{font-family:var(--font-head);font-size:42px;font-weight:800;letter-spacing:0.02em;line-height:1}
+.page-sub{color:var(--muted);font-size:13px;margin-top:6px}
+.page-actions{display:flex;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:8px;font-size:12px;font-weight:600;letter-spacing:0.04em;border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all .2s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.btn-primary:hover{background:oklch(78% 0.22 145);color:var(--bg);box-shadow:0 8px 24px oklch(72% 0.22 145 / 0.35)}
+.btn-danger{color:var(--danger);border-color:rgba(239,91,91,0.3)}
+.btn-danger:hover{background:rgba(239,91,91,0.1);color:var(--danger);border-color:var(--danger)}
 
-    .login-sub {
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 36px;
-    }
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi:hover{border-color:var(--border2)}
+.kpi-label{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kpi-value{font-family:var(--font-head);font-size:42px;font-weight:800;line-height:1.05;margin-top:10px}
+.kpi-delta{font-size:11px;font-weight:600;margin-top:8px;display:flex;align-items:center;gap:6px}
+.kpi-delta.up{color:var(--accent)}
+.kpi-delta.down{color:var(--danger)}
+.kpi-spark{position:absolute;right:12px;bottom:12px;opacity:.6}
 
-    .field-label {
-      display: block;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
+/* CHART */
+.row-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:28px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:14px}
+.card-title{font-size:14px;font-weight:600;letter-spacing:0.02em}
+.card-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.tabs{display:flex;gap:4px;background:var(--bg2);padding:3px;border-radius:6px;font-size:11px}
+.tab{padding:5px 12px;border-radius:4px;color:var(--muted);cursor:pointer;border:none;background:transparent;transition:all .2s}
+.tab.active{background:var(--surface2);color:var(--text)}
 
-    .field-input {
-      width: 100%;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-family: var(--font-body);
-      font-size: 15px;
-      padding: 13px 16px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .field-input:focus { border-color: var(--accent); }
-    .field-input::placeholder { color: var(--muted); }
+/* TABLE */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--bg2);text-align:left;padding:12px 16px;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)}
+td{padding:14px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:var(--bg2)}
+tbody tr:last-child td{border-bottom:none}
+.tag{display:inline-flex;padding:3px 9px;border-radius:6px;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase}
+.tag-new{background:rgba(91,156,239,0.15);color:var(--info)}
+.tag-progress{background:rgba(226,177,68,0.15);color:var(--warn)}
+.tag-done{background:var(--accent-dim);color:var(--accent)}
+.tag-active{background:var(--accent-dim);color:var(--accent)}
+.tag-paused{background:rgba(136,136,136,0.15);color:var(--muted2)}
+.tag-elite{background:linear-gradient(90deg,oklch(72% 0.22 145 / 0.2),oklch(72% 0.22 145 / 0.05));color:var(--accent);border:1px solid oklch(72% 0.22 145 / 0.3)}
+.row-actions{display:flex;gap:6px;opacity:0;transition:opacity .2s}
+tbody tr:hover .row-actions{opacity:1}
+.tiny-btn{width:28px;height:28px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .2s}
+.tiny-btn:hover{border-color:var(--accent);color:var(--accent)}
+.tiny-btn.danger:hover{border-color:var(--danger);color:var(--danger)}
 
-    .btn-primary {
-      width: 100%;
-      margin-top: 20px;
-      padding: 14px;
-      background: var(--accent);
-      color: #0C0C0C;
-      font-family: var(--font-head);
-      font-size: 18px;
-      letter-spacing: 0.08em;
-      border: none;
-      border-radius: var(--radius);
-      cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
-    }
-    .btn-primary:hover { opacity: 0.88; }
-    .btn-primary:active { transform: scale(0.98); }
+/* TOOLBAR */
+.toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.toolbar input,.toolbar select{background:var(--surface);border:1px solid var(--border);padding:8px 12px;border-radius:8px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--accent)}
+.toolbar input{flex:1;min-width:200px;max-width:340px}
+.chip-group{display:flex;gap:6px;background:var(--surface);padding:3px;border-radius:8px;border:1px solid var(--border)}
+.chip{padding:6px 14px;border-radius:6px;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;border:none;background:transparent;transition:all .2s}
+.chip.active{background:var(--bg2);color:var(--text)}
+.spacer{flex:1}
 
-    .error-msg {
-      margin-top: 14px;
-      padding: 10px 14px;
-      background: var(--danger-dim);
-      border: 1px solid var(--danger);
-      border-radius: 8px;
-      color: var(--danger);
-      font-size: 13px;
-      display: none;
-    }
-    .error-msg.visible { display: block; }
+/* CONTENT EDITOR */
+.editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.editor-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px}
+.editor-card h3{font-family:var(--font-head);font-size:24px;font-weight:800;margin-bottom:4px}
+.editor-card .editor-cat{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:18px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.field input,.field textarea,.field select{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;font-family:inherit;transition:border-color .2s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
+.field textarea{resize:vertical;min-height:74px;line-height:1.5}
+.editor-actions{display:flex;gap:10px;margin-top:8px}
 
-    /* ── Dashboard ── */
-    #dashboard { display: none; }
+/* DETAIL DRAWER */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:50;opacity:0;pointer-events:none;transition:opacity .25s}
+.drawer-overlay.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;width:440px;max-width:100vw;height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:51;transform:translateX(100%);transition:transform .3s cubic-bezier(0.22,1,0.36,1);display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+.drawer-head{padding:22px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.drawer-head h3{font-family:var(--font-head);font-size:24px;font-weight:800}
+.drawer-body{flex:1;overflow-y:auto;padding:22px 26px}
+.drawer-row{padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:14px}
+.drawer-row:last-child{border:none}
+.drawer-row .lbl{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.drawer-row .val{font-size:14px;color:var(--text);text-align:right}
+.drawer-foot{padding:18px 26px;border-top:1px solid var(--border);display:flex;gap:10px}
 
-    /* Top bar */
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      background: rgba(12,12,12,0.92);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 32px;
-      height: 60px;
-      gap: 16px;
-    }
+/* TOAST */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:12px 22px;font-size:13px;color:var(--text);box-shadow:0 20px 50px rgba(0,0,0,0.5);transition:transform .35s cubic-bezier(0.22,1,0.36,1);z-index:200}
+#toast.show{transform:translateX(-50%) translateY(0)}
 
-    .topbar-logo {
-      font-family: var(--font-head);
-      font-size: 22px;
-      letter-spacing: 0.06em;
-      white-space: nowrap;
-    }
-    .topbar-logo span { color: var(--accent); }
+/* RESPONSIVE */
+@media (max-width:960px){
+  .sidebar{position:fixed;left:-260px;top:0;z-index:30;transition:left .3s;box-shadow:0 0 40px rgba(0,0,0,0.4)}
+  .sidebar.open{left:0}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .row-grid{grid-template-columns:1fr}
+  .editor-grid{grid-template-columns:1fr}
+  .topbar{padding:12px 18px}
+  .content{padding:20px 18px 40px}
+  .page-title{font-size:32px}
+  .menu-trigger{display:flex !important}
+}
+.menu-trigger{display:none;width:36px;height:36px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);align-items:center;justify-content:center;font-size:16px}
 
-    .topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+@media (max-width:600px){
+  .kpi-grid{grid-template-columns:1fr}
+  .topbar-search{display:none}
+  table{font-size:12px}
+  th,td{padding:10px 12px}
+  .drawer{width:100%}
+}
 
-    .badge {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 4px 10px;
-    }
-
-    .btn-sm {
-      padding: 7px 14px;
-      background: transparent;
-      border: 1px solid var(--border2);
-      border-radius: 8px;
-      color: var(--muted);
-      font-family: var(--font-body);
-      font-size: 13px;
-      cursor: pointer;
-      transition: color 0.2s, border-color 0.2s;
-      white-space: nowrap;
-    }
-    .btn-sm:hover { color: var(--text); border-color: var(--accent); }
-
-    .btn-accent-sm {
-      padding: 7px 14px;
-      background: var(--accent-dim);
-      border: 1px solid var(--accent);
-      border-radius: 8px;
-      color: var(--accent);
-      font-family: var(--font-body);
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.2s;
-      white-space: nowrap;
-    }
-    .btn-accent-sm:hover { background: oklch(72% 0.22 145 / 0.25); }
-
-    /* Stats */
-    .main-content {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 32px 32px 80px;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
-      margin-bottom: 28px;
-    }
-
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 22px 24px;
-    }
-
-    .stat-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-
-    .stat-value {
-      font-family: var(--font-head);
-      font-size: 42px;
-      line-height: 1;
-      letter-spacing: 0.02em;
-      color: var(--text);
-    }
-
-    .stat-value.accent { color: var(--accent); }
-
-    /* Toolbar */
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-    }
-
-    .search-input {
-      flex: 1;
-      min-width: 200px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-family: var(--font-body);
-      font-size: 14px;
-      padding: 10px 16px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .search-input:focus { border-color: var(--accent); }
-    .search-input::placeholder { color: var(--muted); }
-
-    .select-filter {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-family: var(--font-body);
-      font-size: 13px;
-      padding: 10px 14px;
-      outline: none;
-      cursor: pointer;
-      transition: border-color 0.2s;
-      appearance: none;
-      padding-right: 32px;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(240,240,238,0.45)' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-    }
-    .select-filter:focus { border-color: var(--accent); }
-
-    /* Table */
-    .table-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    thead {
-      background: var(--surface2);
-      border-bottom: 1px solid var(--border);
-    }
-
-    th {
-      padding: 12px 16px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      text-align: left;
-      white-space: nowrap;
-      cursor: pointer;
-      user-select: none;
-      transition: color 0.15s;
-    }
-    th:hover { color: var(--text); }
-    th.sorted { color: var(--accent); }
-    th .sort-arrow { margin-left: 4px; opacity: 0.6; }
-
-    tbody tr {
-      border-bottom: 1px solid var(--border);
-      transition: background 0.15s;
-    }
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--surface2); }
-
-    td {
-      padding: 14px 16px;
-      font-size: 14px;
-      color: var(--text);
-      vertical-align: top;
-    }
-
-    td.id-cell {
-      color: var(--muted);
-      font-size: 13px;
-      font-variant-numeric: tabular-nums;
-      width: 48px;
-    }
-
-    td.name-cell { font-weight: 500; }
-
-    td.phone-cell {
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-    }
-    td.phone-cell a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-    td.phone-cell a:hover { text-decoration: underline; }
-
-    td.comment-cell {
-      color: var(--muted);
-      font-size: 13px;
-      max-width: 260px;
-    }
-
-    td.date-cell {
-      color: var(--muted);
-      font-size: 12px;
-      white-space: nowrap;
-      font-variant-numeric: tabular-nums;
-    }
-
-    td.ip-cell {
-      color: var(--muted);
-      font-size: 11px;
-      font-family: monospace;
-      white-space: nowrap;
-    }
-
-    /* Empty / loading */
-    .state-row td {
-      text-align: center;
-      padding: 60px 24px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .spinner {
-      display: inline-block;
-      width: 20px; height: 20px;
-      border: 2px solid var(--border2);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 8px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Pagination */
-    .pagination {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 16px;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .page-info {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .page-btns { display: flex; gap: 6px; }
-
-    .page-btn {
-      min-width: 34px;
-      height: 34px;
-      padding: 0 10px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      color: var(--muted);
-      font-size: 13px;
-      cursor: pointer;
-      transition: color 0.15s, border-color 0.15s, background 0.15s;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .page-btn:hover { color: var(--text); border-color: var(--accent); }
-    .page-btn.active {
-      background: var(--accent-dim);
-      border-color: var(--accent);
-      color: var(--accent);
-      font-weight: 600;
-    }
-    .page-btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
-
-    /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%) translateY(12px);
-      background: var(--surface2);
-      border: 1px solid var(--border2);
-      border-radius: 10px;
-      padding: 12px 20px;
-      font-size: 14px;
-      color: var(--text);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-      opacity: 0;
-      transition: opacity 0.25s, transform 0.25s;
-      pointer-events: none;
-      z-index: 9000;
-      white-space: nowrap;
-    }
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    @media (max-width: 700px) {
-      .main-content { padding: 20px 16px 60px; }
-      .topbar { padding: 0 16px; }
-      .badge { display: none; }
-      td.ip-cell, th:nth-child(6) { display: none; }
-      td.comment-cell { max-width: 140px; }
-    }
-  </style>
+/* misc */
+.empty{padding:60px 40px;text-align:center;color:var(--muted)}
+.empty .glyph{font-size:42px;opacity:.4;margin-bottom:14px}
+.hidden{display:none !important}
+</style>
 </head>
 <body>
 
-<!-- ── Login Screen ── -->
-<div id="login-screen">
-  <div class="login-card">
+<!-- LOGIN -->
+<div id="loginScreen">
+  <form class="login-card" onsubmit="event.preventDefault();handleLogin();">
     <div class="login-logo">SAVVA<span>.</span>TEAM</div>
-    <div class="login-sub">Панель управления заявками</div>
-
-    <label class="field-label" for="secret-input">Пароль доступа</label>
-    <input
-      class="field-input"
-      id="secret-input"
-      type="password"
-      placeholder="Введите секретный ключ"
-      autocomplete="current-password"
-    />
-
-    <button class="btn-primary" id="login-btn">ВОЙТИ</button>
-    <div class="error-msg" id="login-error">Неверный пароль. Проверьте ADMIN_SECRET.</div>
-  </div>
+    <div class="login-sub">Admin Panel</div>
+    <div class="login-field">
+      <label for="loginPass">Пароль доступа</label>
+      <input id="loginPass" type="password" placeholder="Введите секретный ключ" autocomplete="current-password" />
+    </div>
+    <button type="submit" class="login-btn">Войти</button>
+    <div class="login-error" id="loginError">Неверный пароль</div>
+  </form>
 </div>
 
-<!-- ── Dashboard ── -->
-<div id="dashboard">
-  <nav class="topbar">
-    <div class="topbar-logo">SAVVA<span>.</span>ADMIN</div>
-    <div class="topbar-right">
-      <span class="badge" id="badge-total">— заявок</span>
-      <button class="btn-accent-sm" id="export-btn">↓ CSV</button>
-      <button class="btn-sm" id="logout-btn">Выйти</button>
+<!-- APP -->
+<div id="app" class="hidden">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">SAVVA<span>.</span>TEAM</div>
+    <button class="nav-item active" data-page="dashboard"><span class="icon">▦</span>Дашборд</button>
+    <button class="nav-item" data-page="inbox"><span class="icon">✉</span>Заявки<span class="badge" id="inboxBadge">0</span></button>
+    <button class="nav-item" data-page="students"><span class="icon">◉</span>Ученики</button>
+    <div class="nav-section">Контент лендинга</div>
+    <button class="nav-item" data-page="texts"><span class="icon">¶</span>Тексты</button>
+    <button class="nav-item" data-page="media"><span class="icon">▶</span>Видео и медиа</button>
+    <button class="nav-item" data-page="programs"><span class="icon">◈</span>Программы</button>
+    <button class="nav-item" data-page="prices"><span class="icon">₽</span>Цены</button>
+    <button class="nav-item" data-page="testimonials"><span class="icon">"</span>Отзывы</button>
+    <button class="nav-item" data-page="coaches"><span class="icon">★</span>Тренеры</button>
+    <div class="sidebar-footer">
+      <div class="avatar">С</div>
+      <div class="user-info"><strong>Савва</strong><span>Администратор</span></div>
+      <button class="logout-btn" onclick="handleLogout()" title="Выход">⎋</button>
     </div>
-  </nav>
+  </aside>
 
-  <div class="main-content">
-    <!-- Stats -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Всего заявок</div>
-        <div class="stat-value accent" id="stat-total">—</div>
+  <main class="main">
+    <div class="topbar">
+      <button class="menu-trigger" onclick="document.getElementById('sidebar').classList.toggle('open')">≡</button>
+      <div class="topbar-search">
+        <input type="text" placeholder="Поиск по заявкам, ученикам, контенту…" id="globalSearch" />
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Сегодня</div>
-        <div class="stat-value" id="stat-today">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Последняя заявка</div>
-        <div class="stat-value" id="stat-last" style="font-size:18px;padding-top:8px;color:var(--muted)">—</div>
+      <div class="topbar-actions">
+        <button class="icon-btn" title="Уведомления">⌒<span class="dot"></span></button>
+        <button class="icon-btn" title="Помощь">?</button>
       </div>
     </div>
 
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <input
-        class="search-input"
-        id="search-input"
-        type="search"
-        placeholder="Поиск по имени, телефону, комментарию…"
-      />
-      <select class="select-filter" id="date-filter">
-        <option value="all">Все время</option>
-        <option value="today">Сегодня</option>
-        <option value="week">Эта неделя</option>
-        <option value="month">Этот месяц</option>
-      </select>
-      <button class="btn-sm" id="refresh-btn">⟳ Обновить</button>
-    </div>
-
-    <!-- Table -->
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th data-col="id">#<span class="sort-arrow" id="arrow-id"></span></th>
-            <th data-col="name">Имя<span class="sort-arrow" id="arrow-name"></span></th>
-            <th data-col="phone">Телефон<span class="sort-arrow" id="arrow-phone"></span></th>
-            <th data-col="comment">Комментарий<span class="sort-arrow" id="arrow-comment"></span></th>
-            <th data-col="created_at">Дата<span class="sort-arrow" id="arrow-created_at"></span></th>
-            <th data-col="ip">IP<span class="sort-arrow" id="arrow-ip"></span></th>
-          </tr>
-        </thead>
-        <tbody id="leads-tbody">
-          <tr class="state-row">
-            <td colspan="6"><span class="spinner"></span> Загрузка…</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Pagination -->
-    <div class="pagination">
-      <span class="page-info" id="page-info"></span>
-      <div class="page-btns" id="page-btns"></div>
-    </div>
-  </div>
+    <div class="content" id="pageContent"></div>
+  </main>
 </div>
 
-<!-- Toast -->
-<div class="toast" id="toast"></div>
+<!-- DRAWER -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head"><h3 id="drawerTitle">Заявка</h3>
+    <button class="tiny-btn" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-foot" id="drawerFoot"></div>
+</aside>
+
+<div id="toast"></div>
 
 <script>
-  const PER_PAGE = 25;
+/* ============= STATE & STORAGE ============= */
+const STORE_KEY='savva_admin_v1';
+const SESSION_KEY='savva_admin_session';
 
-  let allLeads = [];
-  let filtered = [];
-  let sortCol = 'id';
-  let sortDir = -1; // -1 = desc
-  let page = 1;
-  let secret = '';
+let adminSecret='';
 
-  // ── Utils ─────────────────────────────────────────────────────────────────
+const SEED={
+  students:[
+    {id:1,name:'Артём Волков',phone:'+7 921 545-22-12',level:'A',plan:'Элита',visits:48,since:'2024-10-12',status:'active'},
+    {id:2,name:'Мария Зайцева',phone:'+7 911 887-34-91',level:'B',plan:'Прогресс',visits:24,since:'2025-02-03',status:'active'},
+    {id:3,name:'Дмитрий Орлов',phone:'+7 921 332-09-87',level:'A',plan:'Элита',visits:65,since:'2024-08-20',status:'active'},
+    {id:4,name:'Ольга Беляева',phone:'+7 921 778-54-33',level:'C',plan:'Старт',visits:6,since:'2026-03-15',status:'active'},
+    {id:5,name:'Илья Соловьёв',phone:'+7 911 221-67-45',level:'B',plan:'Прогресс',visits:38,since:'2024-12-10',status:'paused'},
+    {id:6,name:'Виктория Соколова',phone:'+7 905 443-91-22',level:'A',plan:'Элита',visits:72,since:'2024-06-18',status:'active'},
+    {id:7,name:'Никита Журавлёв',phone:'+7 921 776-12-58',level:'B',plan:'Прогресс',visits:18,since:'2025-09-08',status:'active'},
+    {id:8,name:'Александра Чернова',phone:'+7 911 554-33-90',level:'C',plan:'Старт',visits:11,since:'2026-01-22',status:'active'},
+  ],
+  programs:[
+    {id:1,name:'СТАРТ',level:'Beginner',price:'5 000 ₽',sessions:'1 раз / неделю',desc:'Знакомство с правилами и базовой техникой. Идеально для тех, кто впервые берёт ракетку.'},
+    {id:2,name:'ПРОГРЕСС',level:'Intermediate',price:'4 500 ₽',sessions:'2 раза / неделю',desc:'Систематическая работа над техникой и тактикой. Подготовка к любительским турнирам.'},
+    {id:3,name:'ЭЛИТА',level:'Advanced',price:'4 000 ₽',sessions:'3 раза / неделю',desc:'Полная программа: ОФП, видео-разбор, спарринги, психологическая подготовка.'},
+  ],
+  prices:[
+    {id:1,name:'Старт',price:5000,period:'за занятие',popular:false},
+    {id:2,name:'Прогресс',price:4500,period:'за занятие',popular:true},
+    {id:3,name:'Элита',price:4000,period:'за занятие',popular:false},
+  ],
+  testimonials:[
+    {id:1,author:'Артём В.',role:'Уровень A',text:'Пришёл полным нулём — через 3 месяца уже играю в турнирах. Методика реально работает.'},
+    {id:2,author:'Мария З.',role:'Уровень B',text:'Лучшая падел-академия в городе. Корты в идеальном состоянии, тренеры профессиональные.'},
+    {id:3,author:'Дмитрий О.',role:'Уровень A',text:'Записался на пробное, остался навсегда. Savva Team — это семья, где тебя поддерживают и помогают расти.'},
+  ],
+  coaches:[
+    {id:1,name:'Савва Шехватов',role:'Head Coach',level:'A',bio:'Основатель академии. 12+ лет опыта. Специализация — тактика и спарринги уровня A.',photo:'',video:''},
+    {id:2,name:'Екатерина Леонова',role:'Junior Coach',level:'B',bio:'Работает с начинающими и детскими группами. Мягкий подход, крепкая база.',photo:'',video:''},
+    {id:3,name:'Елена Алешина',role:'Junior Coach',level:'B',bio:'Физподготовка и работа с техникой. Предан делу.',photo:'',video:''},
+  ],
+  texts:{
+    hero_eyebrow:'Падел-академия · Санкт-Петербург',
+    hero_title:'SAVVA TEAM',
+    hero_tag:'Где рождаются чемпионы',
+    hero_sub:'Профессиональная подготовка по падел-теннису с тренерами международного уровня. От первой подачи до титулов.',
+    hero_cta:'Записаться на тренировку',
+    hero_cta2:'Смотреть видео',
+    about_eyebrow:'О нас',
+    about_title:'Школа, в которой растут чемпионы',
+    about_lead:'Savva Team — это не просто академия. Это семья профессионалов, объединённых страстью к паделу. Мы создали пространство, где каждый игрок раскрывает свой потенциал.',
+    about_p1:'Наша методика построена на индивидуальном подходе: мы видим сильные стороны каждого ученика и работаем с ними. От базовой техники до тактического мастерства — каждая тренировка приближает вас к цели.',
+    about_p2:'10 крытых кортов с профессиональным покрытием, видео-анализ, ОФП, психологическая подготовка — всё, что нужно для реального прогресса.',
+    programs_eyebrow:'Программы',
+    programs_title:'Выбери свой путь',
+    programs_sub:'Три уровня погружения — от первой ракетки до соревновательного спорта',
+    schedule_eyebrow:'Расписание',
+    schedule_title:'Когда тренируемся',
+    schedule_sub:'Групповые занятия. Индивидуальные — по согласованию.',
+    prices_eyebrow:'Цены',
+    prices_title:'Абонементы',
+    prices_sub:'Прозрачные цены. Никаких скрытых платежей.',
+    showreel_eyebrow:'Showreel',
+    showreel_title:'Один день в Savva Team',
+    showreel_sub:'Тренировки, спарринги, эмоции',
+    test_eyebrow:'Отзывы',
+    test_title:'Что говорят ученики',
+    contact_eyebrow:'Контакты',
+    contact_title:'Запишись на тренировку',
+    contact_sub:'Оставь заявку — мы перезвоним в течение часа',
+    contact_phone:'+7 (999) 218-36-39',
+    contact_email:'hello@savva.team',
+    contact_address:'Санкт-Петербург, ул. Полевая Сабировская, 52',
+    footer_text:'© 2026 Savva Team. Все права защищены.'
+  },
+  media:{showreel_url:'',showreel_poster:'',showreel_caption:'Один день в академии',hero_video_url:''}
+};
 
-  function toast(msg, ms = 2200) {
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), ms);
+/* leads и stats — только с сервера */
+let serverLeads=[];
+let serverStats=null;
+
+function loadStore(){
+  let s=null;
+  try{const raw=localStorage.getItem(STORE_KEY);if(raw)s=JSON.parse(raw)}catch(e){}
+  if(!s)s=JSON.parse(JSON.stringify(SEED));
+  ['students','programs','prices','testimonials','coaches'].forEach(k=>{if(!Array.isArray(s[k]))s[k]=JSON.parse(JSON.stringify(SEED[k]||[]))});
+  ['texts','media'].forEach(k=>{if(!s[k]||typeof s[k]!=='object')s[k]=JSON.parse(JSON.stringify(SEED[k]||{}))});
+  return s;
+}
+function saveStore(){localStorage.setItem(STORE_KEY,JSON.stringify(state));updateBadges()}
+let state=loadStore();
+
+function normalizeLeads(raw){
+  return raw.map(l=>({...l, message:l.comment||'', date:l.created_at||''}));
+}
+
+function updateBadges(){
+  const newCount=serverStats?serverStats.new:serverLeads.filter(l=>l.status==='new').length;
+  const b=document.getElementById('inboxBadge');
+  if(b){b.textContent=newCount;b.style.display=newCount?'inline-block':'none'}
+}
+
+/* ============= LOGIN ============= */
+async function fetchLeadsAndStats(secret){
+  const [leadsRes, statsRes] = await Promise.all([
+    fetch('/api/leads?secret='+encodeURIComponent(secret)),
+    fetch('/api/stats?secret='+encodeURIComponent(secret)),
+  ]);
+  if(!leadsRes.ok) return false;
+  serverLeads = normalizeLeads(await leadsRes.json());
+  if(statsRes.ok) serverStats = await statsRes.json();
+  return true;
+}
+
+async function handleLogin(){
+  const pass=document.getElementById('loginPass').value.trim();
+  if(!pass)return;
+  const errEl=document.getElementById('loginError');
+  errEl.classList.remove('show');
+  try{
+    const ok = await fetchLeadsAndStats(pass);
+    if(!ok){errEl.classList.add('show');return}
+    adminSecret=pass;
+    sessionStorage.setItem(SESSION_KEY,pass);
+    showApp();
+  }catch(e){
+    errEl.textContent='Ошибка соединения с сервером';
+    errEl.classList.add('show');
   }
+}
+function handleLogout(){sessionStorage.removeItem(SESSION_KEY);location.reload()}
+function showApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').classList.remove('hidden');
+  updateBadges();
+  navigate('dashboard');
+}
+async function autoLogin(){
+  const saved=sessionStorage.getItem(SESSION_KEY);
+  if(!saved)return;
+  try{
+    const ok = await fetchLeadsAndStats(saved);
+    if(!ok)return;
+    adminSecret=saved;
+    showApp();
+  }catch(e){}
+}
+autoLogin();
 
-  function formatDate(str) {
-    if (!str) return '—';
-    const d = new Date(str);
-    if (isNaN(d)) return str;
-    return d.toLocaleString('ru-RU', {
-      day: '2-digit', month: '2-digit', year: '2-digit',
-      hour: '2-digit', minute: '2-digit'
-    });
+/* ============= NAVIGATION ============= */
+document.querySelectorAll('.nav-item[data-page]').forEach(b=>{
+  b.addEventListener('click',()=>navigate(b.dataset.page));
+});
+function navigate(page){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.page===page));
+  document.getElementById('sidebar').classList.remove('open');
+  const c=document.getElementById('pageContent');
+  c.innerHTML='';
+  ({dashboard:renderDashboard,inbox:renderInbox,students:renderStudents,texts:renderTexts,media:renderMedia,programs:renderPrograms,prices:renderPrices,testimonials:renderTestimonials,coaches:renderCoaches}[page]||renderDashboard)(c);
+}
+
+/* ============= TOAST ============= */
+let toastTimer;
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ============= DRAWER ============= */
+function openDrawer(title,body,foot){
+  document.getElementById('drawerTitle').textContent=title;
+  document.getElementById('drawerBody').innerHTML=body;
+  document.getElementById('drawerFoot').innerHTML=foot||'';
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('open');
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('open');
+}
+
+/* ============= CSV ============= */
+function exportCSV(rows,filename){
+  if(!rows.length){toast('Нет данных для экспорта');return}
+  const keys=Object.keys(rows[0]);
+  const esc=v=>{const s=String(v??'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+  const csv=[keys.join(','),...rows.map(r=>keys.map(k=>esc(r[k])).join(','))].join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
+  URL.revokeObjectURL(a.href);
+  toast('CSV экспортирован');
+}
+
+/* ============= DASHBOARD ============= */
+function renderDashboard(c){
+  const st=serverStats||{total:0,new:0,progress:0,done:0,today:0,by_day:[],last_at:null};
+  const conversion=st.total?Math.round(st.done/st.total*100):0;
+  const recentLeads=serverLeads.slice(0,5);
+
+  c.innerHTML=`
+    <div class="page-head">
+      <div><div class="page-title">ДАШБОРД</div><div class="page-sub">Сводка — ${new Date().toLocaleDateString('ru-RU',{month:'long',year:'numeric'})}</div></div>
+      <div class="page-actions">
+        <button class="btn btn-primary" onclick="navigate('inbox')">Заявки (${st.new})</button>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      ${kpiCard('Всего заявок', st.total, '', 'up', sparklineFromByDay(st.by_day))}
+      ${kpiCard('Сегодня', st.today, '', 'up', sparkline([1,1,2,1,3,2,st.today]))}
+      ${kpiCard('Новых', st.new, '', st.new>0?'up':'down', sparkline([1,2,1,3,2,4,st.new]))}
+      ${kpiCard('Конверсия', conversion+'%', st.done+' закрыто', 'up', sparkline([5,6,4,7,6,8,conversion]))}
+    </div>
+    <div class="row-grid">
+      <div class="card">
+        <div class="card-head">
+          <div><div class="card-title">Заявки по дням</div><div class="card-sub">Последние 7 дней</div></div>
+        </div>
+        ${barChartFromStats(st.by_day)}
+      </div>
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">Статусы заявок</div><div class="card-sub">Из ${st.total} всего</div></div></div>
+        ${donutChart(st)}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div><div class="card-title">Последние заявки</div><div class="card-sub">${st.new} новых ждут обработки</div></div>
+        <button class="btn" onclick="navigate('inbox')">Все заявки →</button>
+      </div>
+      ${leadsTable(recentLeads,true)}
+    </div>`;
+}
+function kpiCard(label,value,delta,dir,spark){
+  return `<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${delta?`<div class="kpi-delta ${dir}">${dir==='up'?'▲':'▼'} ${delta}</div>`:''}<div class="kpi-spark">${spark}</div></div>`;
+}
+function sparkline(data){
+  const w=80,h=28,max=Math.max(...data,1),min=Math.min(...data);
+  const pts=data.map((v,i)=>`${(i/(data.length-1))*w},${h-((v-min)/(max-min||1))*h}`).join(' ');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="oklch(72% 0.22 145)" stroke-width="1.5"/></svg>`;
+}
+function sparklineFromByDay(byDay){
+  const data=byDay.map(d=>d.n);
+  if(!data.length)data.push(0);
+  return sparkline(data);
+}
+
+/* Строим 7-дневный диапазон, заполняя пустые дни нулями */
+function last7days(){
+  const days=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    days.push(d.toISOString().slice(0,10));
   }
-
-  function formatDateShort(str) {
-    if (!str) return '—';
-    const d = new Date(str);
-    if (isNaN(d)) return str;
-    return d.toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
-  }
-
-  function isToday(str) {
-    const d = new Date(str);
-    const n = new Date();
-    return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
-  }
-
-  function isThisWeek(str) {
-    const d = new Date(str);
-    const now = new Date();
-    const start = new Date(now); start.setDate(now.getDate() - now.getDay() + 1); start.setHours(0,0,0,0);
-    return d >= start;
-  }
-
-  function isThisMonth(str) {
-    const d = new Date(str);
-    const n = new Date();
-    return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth();
-  }
-
-  function esc(s) {
-    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  // ── Auth ──────────────────────────────────────────────────────────────────
-
-  document.getElementById('login-btn').addEventListener('click', doLogin);
-  document.getElementById('secret-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLogin();
+  return days;
+}
+function barChartFromStats(byDay){
+  const map={};byDay.forEach(d=>map[d.day]=d.n);
+  const days=last7days();
+  const data=days.map(d=>({day:d,n:map[d]||0}));
+  const max=Math.max(...data.map(d=>d.n),1);
+  const W=600,H=220,pad=30;
+  const bw=(W-pad*2)/data.length-10;
+  let bars='';
+  data.forEach((d,i)=>{
+    const x=pad+i*((W-pad*2)/data.length)+5;
+    const bh=Math.max(4,((d.n/max)*(H-pad-30)));
+    const label=d.day.slice(5).replace('-','.');
+    bars+=`<rect x="${x}" y="${H-pad-bh}" width="${bw}" height="${bh}" rx="4" fill="oklch(72% 0.22 145)" opacity="${0.45+0.55*(d.n/max)}"/>`;
+    bars+=`<text x="${x+bw/2}" y="${H-12}" text-anchor="middle" font-size="10" fill="#888" font-family="Inter">${label}</text>`;
+    if(d.n>0)bars+=`<text x="${x+bw/2}" y="${H-pad-bh-6}" text-anchor="middle" font-size="11" fill="#f0f0f0" font-family="Inter" font-weight="600">${d.n}</text>`;
   });
-  document.getElementById('logout-btn').addEventListener('click', () => {
-    secret = '';
-    allLeads = [];
-    document.getElementById('dashboard').style.display = 'none';
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('secret-input').value = '';
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${bars}</svg>`;
+}
+function donutChart(st){
+  const data=[
+    {l:'Новые',    v:st.new,      c:'#5b9cef'},
+    {l:'В работе', v:st.progress, c:'#e2b144'},
+    {l:'Закрытые', v:st.done,     c:'oklch(72% 0.22 145)'},
+  ].filter(d=>d.v>0);
+  if(!data.length)data.push({l:'Нет заявок',v:1,c:'#333'});
+  const total=data.reduce((s,d)=>s+d.v,0);
+  const cx=80,cy=80,r=58,sw=18;let acc=0;
+  let arcs='';
+  data.forEach(d=>{
+    const start=acc/total*Math.PI*2-Math.PI/2;
+    acc+=d.v;
+    const end=acc/total*Math.PI*2-Math.PI/2;
+    const large=d.v/total>0.5?1:0;
+    const x1=cx+r*Math.cos(start),y1=cy+r*Math.sin(start);
+    const x2=cx+r*Math.cos(end),y2=cy+r*Math.sin(end);
+    arcs+=`<path d="M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}" fill="none" stroke="${d.c}" stroke-width="${sw}"/>`;
   });
+  const legend=data.map(d=>`<div style="display:flex;align-items:center;gap:10px;font-size:12px;padding:6px 0"><div style="width:10px;height:10px;border-radius:2px;background:${d.c}"></div><span style="flex:1">${d.l}</span><strong>${d.v}</strong></div>`).join('');
+  return `<div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap"><svg width="160" height="160" viewBox="0 0 160 160">${arcs}<text x="80" y="78" text-anchor="middle" font-family="Big Shoulders Display" font-size="32" font-weight="800" fill="#f0f0f0">${st.total}</text><text x="80" y="96" text-anchor="middle" font-size="10" fill="#888" letter-spacing="1.5">ЗАЯВОК</text></svg><div style="flex:1;min-width:140px">${legend}</div></div>`;
+}
 
-  async function doLogin() {
-    const val = document.getElementById('secret-input').value.trim();
-    if (!val) return;
-    const errEl = document.getElementById('login-error');
-    errEl.classList.remove('visible');
-
-    try {
-      const res = await fetch(`/api/leads?secret=${encodeURIComponent(val)}`);
-      if (res.status === 401) {
-        errEl.classList.add('visible');
-        return;
-      }
-      const data = await res.json();
-      secret = val;
-      allLeads = data;
-      showDashboard();
-    } catch {
-      errEl.textContent = 'Ошибка соединения с сервером.';
-      errEl.classList.add('visible');
-    }
-  }
-
-  // ── Dashboard ─────────────────────────────────────────────────────────────
-
-  function showDashboard() {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    applyFiltersAndRender();
-  }
-
-  // Stats
-  function renderStats() {
-    const total = allLeads.length;
-    const todayCount = allLeads.filter(l => isToday(l.created_at)).length;
-    const last = allLeads[0];
-
-    document.getElementById('stat-total').textContent = total;
-    document.getElementById('stat-today').textContent = todayCount;
-    document.getElementById('stat-last').textContent = last ? formatDateShort(last.created_at) : '—';
-    document.getElementById('badge-total').textContent = `${total} заявок`;
-  }
-
-  // Filtering
-  function applyFiltersAndRender() {
-    const q = document.getElementById('search-input').value.trim().toLowerCase();
-    const period = document.getElementById('date-filter').value;
-
-    filtered = allLeads.filter(l => {
-      // Date filter
-      if (period === 'today' && !isToday(l.created_at)) return false;
-      if (period === 'week'  && !isThisWeek(l.created_at)) return false;
-      if (period === 'month' && !isThisMonth(l.created_at)) return false;
-
-      // Search
-      if (q) {
-        const hay = [l.name, l.phone, l.comment, l.ip].join(' ').toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
+/* ============= INBOX ============= */
+async function refreshLeadsAndStats(){
+  try{
+    const [lr,sr]=await Promise.all([
+      fetch('/api/leads?secret='+encodeURIComponent(adminSecret)),
+      fetch('/api/stats?secret='+encodeURIComponent(adminSecret)),
+    ]);
+    if(lr.ok)serverLeads=normalizeLeads(await lr.json());
+    if(sr.ok)serverStats=await sr.json();
+    updateBadges();
+  }catch(e){}
+}
+function renderInbox(c){
+  const filter={search:'',status:'all'};
+  c.innerHTML=`
+    <div class="page-head">
+      <div><div class="page-title">ЗАЯВКИ</div><div class="page-sub" id="inboxSub">${serverLeads.length} всего · ${serverLeads.filter(l=>l.status==='new').length} новых</div></div>
+      <div class="page-actions">
+        <button class="btn" onclick="exportCSV(serverLeads,'leads.csv')">↓ CSV</button>
+        <button class="btn" onclick="doRefreshInbox()">⟳ Обновить</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <input id="leadSearch" type="text" placeholder="Поиск по имени, телефону, сообщению…" />
+      <div class="chip-group" id="statusChips">
+        <button class="chip active" data-st="all">Все</button>
+        <button class="chip" data-st="new">Новые</button>
+        <button class="chip" data-st="progress">В работе</button>
+        <button class="chip" data-st="done">Закрытые</button>
+      </div>
+    </div>
+    <div id="leadsList"></div>`;
+  const redraw=()=>{
+    const list=serverLeads.filter(l=>{
+      if(filter.status!=='all'&&l.status!==filter.status)return false;
+      if(filter.search){const q=filter.search.toLowerCase();return [l.name,l.phone,l.message||''].join(' ').toLowerCase().includes(q)}
       return true;
     });
-
-    // Sort
-    filtered.sort((a, b) => {
-      let va = a[sortCol] ?? '';
-      let vb = b[sortCol] ?? '';
-      if (sortCol === 'id') { va = +va; vb = +vb; }
-      if (va < vb) return sortDir;
-      if (va > vb) return -sortDir;
-      return 0;
-    });
-
-    page = 1;
-    renderStats();
-    renderTable();
-    renderPagination();
-    renderSortArrows();
-  }
-
-  // Sorting
-  document.querySelectorAll('th[data-col]').forEach(th => {
-    th.addEventListener('click', () => {
-      const col = th.dataset.col;
-      if (sortCol === col) sortDir *= -1;
-      else { sortCol = col; sortDir = -1; }
-      renderTable();
-      renderPagination();
-      renderSortArrows();
-    });
+    document.getElementById('leadsList').innerHTML=`<div class="table-wrap">${leadsTable(list)}</div>`;
+  };
+  document.getElementById('leadSearch').addEventListener('input',e=>{filter.search=e.target.value;redraw()});
+  document.getElementById('statusChips').querySelectorAll('.chip').forEach(b=>{
+    b.addEventListener('click',()=>{document.querySelectorAll('#statusChips .chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter.status=b.dataset.st;redraw()});
   });
-
-  function renderSortArrows() {
-    document.querySelectorAll('th[data-col]').forEach(th => {
-      const col = th.dataset.col;
-      const arrow = th.querySelector('.sort-arrow');
-      th.classList.toggle('sorted', col === sortCol);
-      arrow.textContent = col === sortCol ? (sortDir === -1 ? ' ↓' : ' ↑') : '';
+  redraw();
+}
+async function doRefreshInbox(){
+  await refreshLeadsAndStats();
+  renderInbox(document.getElementById('pageContent'));
+  toast('Обновлено');
+}
+function leadsTable(list,compact){
+  if(!list.length)return `<div class="empty"><div class="glyph">✉</div>Нет заявок по фильтру</div>`;
+  return `<table><thead><tr><th>Имя</th><th>Контакт</th>${compact?'':'<th>Сообщение</th>'}<th>Дата</th><th>Статус</th><th></th></tr></thead><tbody>${list.map(l=>`
+    <tr onclick="openLead(${l.id})" style="cursor:pointer">
+      <td><strong>${escapeHtml(l.name)}</strong></td>
+      <td><div>${escapeHtml(l.phone)}</div>${l.email?`<div style="color:var(--muted);font-size:11px">${escapeHtml(l.email)}</div>`:''}</td>
+      ${compact?'':`<td style="max-width:300px"><div style="color:var(--muted2);font-size:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${escapeHtml(l.message||'')}</div></td>`}
+      <td style="color:var(--muted);font-size:12px">${formatDate(l.date||l.created_at)}</td>
+      <td><span class="tag tag-${l.status}">${({new:'Новая',progress:'В работе',done:'Закрыта'})[l.status]||l.status}</span></td>
+      <td><div class="row-actions" onclick="event.stopPropagation()">
+        <button class="tiny-btn" onclick="setLeadStatus(${l.id},'progress')" title="В работу">↻</button>
+        <button class="tiny-btn" onclick="setLeadStatus(${l.id},'done')" title="Закрыть">✓</button>
+      </div></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+function formatDate(d){
+  if(!d)return '—';
+  const dt=new Date(d);
+  if(isNaN(dt))return d;
+  return dt.toLocaleDateString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+function openLead(id){
+  const l=serverLeads.find(x=>x.id===id);if(!l)return;
+  openDrawer('Заявка #'+id,
+    `<div class="drawer-row"><span class="lbl">Имя</span><span class="val">${escapeHtml(l.name)}</span></div>
+     <div class="drawer-row"><span class="lbl">Телефон</span><span class="val"><a href="tel:${escapeAttr(l.phone.replace(/\s/g,''))}" style="color:var(--accent);text-decoration:none">${escapeHtml(l.phone)}</a></span></div>
+     ${l.email?`<div class="drawer-row"><span class="lbl">Email</span><span class="val"><a href="mailto:${escapeAttr(l.email)}" style="color:var(--accent);text-decoration:none">${escapeHtml(l.email)}</a></span></div>`:''}
+     <div class="drawer-row"><span class="lbl">Дата</span><span class="val">${formatDate(l.date||l.created_at)}</span></div>
+     <div class="drawer-row"><span class="lbl">IP</span><span class="val" style="font-family:var(--font-mono);font-size:12px">${escapeHtml(l.ip||'—')}</span></div>
+     <div class="drawer-row"><span class="lbl">Статус</span><span class="val"><span class="tag tag-${l.status}">${({new:'Новая',progress:'В работе',done:'Закрыта'})[l.status]||l.status}</span></span></div>
+     ${l.message?`<div style="margin-top:18px"><div class="lbl" style="margin-bottom:8px">Сообщение</div><div style="background:var(--surface);padding:14px 16px;border-radius:8px;border:1px solid var(--border);font-size:13px;line-height:1.6;color:var(--text)">${escapeHtml(l.message)}</div></div>`:''}`,
+    `<button class="btn" onclick="setLeadStatus(${l.id},'progress');closeDrawer()">В работу</button>
+     <button class="btn btn-primary" onclick="setLeadStatus(${l.id},'done');closeDrawer()">Закрыть заявку</button>`);
+}
+async function setLeadStatus(id,status){
+  try{
+    const res=await fetch('/api/leads/'+id+'?secret='+encodeURIComponent(adminSecret),{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({status}),
     });
-  }
-
-  // Table rows
-  function renderTable() {
-    const tbody = document.getElementById('leads-tbody');
-    const start = (page - 1) * PER_PAGE;
-    const slice = filtered.slice(start, start + PER_PAGE);
-
-    if (filtered.length === 0) {
-      tbody.innerHTML = `<tr class="state-row"><td colspan="6">Заявок не найдено</td></tr>`;
-      return;
+    if(!res.ok){toast('Ошибка обновления статуса');return}
+    const lead=serverLeads.find(l=>l.id===id);
+    if(lead)lead.status=status;
+    if(serverStats){
+      // пересчитываем счётчики локально до следующего полного refresh
+      const oldStatus=lead?lead._prevStatus:'new';
+      serverStats[oldStatus]=(serverStats[oldStatus]||1)-1;
+      serverStats[status]=(serverStats[status]||0)+1;
     }
+    updateBadges();
+    renderInbox(document.getElementById('pageContent'));
+    toast('Статус обновлён');
+  }catch(e){toast('Ошибка соединения')}
+}
 
-    tbody.innerHTML = slice.map(l => `
-      <tr>
-        <td class="id-cell">${esc(l.id)}</td>
-        <td class="name-cell">${esc(l.name)}</td>
-        <td class="phone-cell"><a href="tel:${esc(l.phone)}">${esc(l.phone)}</a></td>
-        <td class="comment-cell">${l.comment ? esc(l.comment) : '<span style="opacity:.35">—</span>'}</td>
-        <td class="date-cell">${formatDate(l.created_at)}</td>
-        <td class="ip-cell">${esc(l.ip || '—')}</td>
-      </tr>
-    `).join('');
-  }
-
-  // Pagination
-  function renderPagination() {
-    const total = filtered.length;
-    const pages = Math.ceil(total / PER_PAGE);
-    const start = (page - 1) * PER_PAGE + 1;
-    const end = Math.min(page * PER_PAGE, total);
-
-    document.getElementById('page-info').textContent =
-      total > 0 ? `${start}–${end} из ${total}` : '';
-
-    const container = document.getElementById('page-btns');
-    if (pages <= 1) { container.innerHTML = ''; return; }
-
-    let html = `<button class="page-btn" id="btn-prev" ${page === 1 ? 'disabled' : ''}>‹</button>`;
-
-    for (let i = 1; i <= pages; i++) {
-      if (pages > 7 && i > 2 && i < pages - 1 && Math.abs(i - page) > 1) {
-        if (i === 3 || i === pages - 2) html += `<button class="page-btn" disabled>…</button>`;
-        continue;
-      }
-      html += `<button class="page-btn ${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`;
-    }
-
-    html += `<button class="page-btn" id="btn-next" ${page === pages ? 'disabled' : ''}>›</button>`;
-    container.innerHTML = html;
-
-    container.querySelectorAll('[data-page]').forEach(btn => {
-      btn.addEventListener('click', () => { page = +btn.dataset.page; renderTable(); renderPagination(); });
+/* ============= STUDENTS ============= */
+function renderStudents(c){
+  const filter={search:'',plan:'all',status:'all'};
+  c.innerHTML=`
+    <div class="page-head">
+      <div><div class="page-title">УЧЕНИКИ</div><div class="page-sub">${state.students.length} в базе · ${state.students.filter(s=>s.status==='active').length} активных</div></div>
+      <div class="page-actions">
+        <button class="btn" onclick="exportCSV(state.students,'students.csv')">↓ CSV</button>
+        <button class="btn btn-primary" onclick="newStudent()">+ Ученик</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <input id="stSearch" type="text" placeholder="Поиск по имени, телефону…" />
+      <select id="stPlan"><option value="all">Все тарифы</option><option>Старт</option><option>Прогресс</option><option>Элита</option></select>
+      <select id="stStatus"><option value="all">Все статусы</option><option value="active">Активные</option><option value="paused">На паузе</option></select>
+    </div>
+    <div id="stList"></div>`;
+  const refresh=()=>{
+    const list=state.students.filter(s=>{
+      if(filter.plan!=='all'&&s.plan!==filter.plan)return false;
+      if(filter.status!=='all'&&s.status!==filter.status)return false;
+      if(filter.search){const q=filter.search.toLowerCase();return [s.name,s.phone].join(' ').toLowerCase().includes(q)}
+      return true;
     });
-    container.querySelector('#btn-prev')?.addEventListener('click', () => { page--; renderTable(); renderPagination(); });
-    container.querySelector('#btn-next')?.addEventListener('click', () => { page++; renderTable(); renderPagination(); });
+    if(!list.length){document.getElementById('stList').innerHTML=`<div class="empty"><div class="glyph">◉</div>Нет учеников по фильтру</div>`;return}
+    document.getElementById('stList').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Ученик</th><th>Уровень</th><th>Тариф</th><th>Тренировок</th><th>С нами</th><th>Статус</th><th></th></tr></thead><tbody>${list.map(s=>`
+      <tr onclick="openStudent(${s.id})" style="cursor:pointer">
+        <td><div style="display:flex;align-items:center;gap:12px"><div class="avatar" style="background:var(--surface2);color:var(--text)">${s.name[0]}</div><div><strong>${escapeHtml(s.name)}</strong><div style="color:var(--muted);font-size:11px">${escapeHtml(s.phone)}</div></div></div></td>
+        <td><span class="tag tag-elite">${s.level}</span></td>
+        <td>${escapeHtml(s.plan)}</td>
+        <td><strong>${s.visits}</strong></td>
+        <td style="color:var(--muted);font-size:12px">${formatDate(s.since)}</td>
+        <td><span class="tag tag-${s.status}">${s.status==='active'?'Активен':'Пауза'}</span></td>
+        <td><div class="row-actions" onclick="event.stopPropagation()"><button class="tiny-btn" onclick="toggleStudentStatus(${s.id})" title="Пауза/Активировать">⏸</button><button class="tiny-btn danger" onclick="deleteStudent(${s.id})" title="Удалить">✕</button></div></td>
+      </tr>`).join('')}</tbody></table></div>`;
+  };
+  document.getElementById('stSearch').addEventListener('input',e=>{filter.search=e.target.value;refresh()});
+  document.getElementById('stPlan').addEventListener('change',e=>{filter.plan=e.target.value;refresh()});
+  document.getElementById('stStatus').addEventListener('change',e=>{filter.status=e.target.value;refresh()});
+  refresh();
+}
+function openStudent(id){
+  const s=state.students.find(x=>x.id===id);if(!s)return;
+  openDrawer(s.name,
+    `<div class="drawer-row"><span class="lbl">Телефон</span><span class="val">${escapeHtml(s.phone)}</span></div>
+     <div class="drawer-row"><span class="lbl">Уровень</span><span class="val">${s.level}</span></div>
+     <div class="drawer-row"><span class="lbl">Тариф</span><span class="val">${escapeHtml(s.plan)}</span></div>
+     <div class="drawer-row"><span class="lbl">Тренировок</span><span class="val">${s.visits}</span></div>
+     <div class="drawer-row"><span class="lbl">С нами с</span><span class="val">${formatDate(s.since)}</span></div>
+     <div class="drawer-row"><span class="lbl">Статус</span><span class="val"><span class="tag tag-${s.status}">${s.status==='active'?'Активен':'Пауза'}</span></span></div>
+     <div style="margin-top:24px"><div class="lbl" style="margin-bottom:10px">Редактирование</div>
+      <div class="field"><label>Имя</label><input id="edStName" value="${escapeAttr(s.name)}"/></div>
+      <div class="field"><label>Телефон</label><input id="edStPhone" value="${escapeAttr(s.phone)}"/></div>
+      <div class="field"><label>Тариф</label><select id="edStPlan"><option ${s.plan==='Старт'?'selected':''}>Старт</option><option ${s.plan==='Прогресс'?'selected':''}>Прогресс</option><option ${s.plan==='Элита'?'selected':''}>Элита</option></select></div>
+     </div>`,
+    `<button class="btn btn-primary" onclick="saveStudent(${id})">Сохранить</button><button class="btn" onclick="closeDrawer()">Отмена</button>`);
+}
+function saveStudent(id){
+  const s=state.students.find(x=>x.id===id);if(!s)return;
+  s.name=document.getElementById('edStName').value;
+  s.phone=document.getElementById('edStPhone').value;
+  s.plan=document.getElementById('edStPlan').value;
+  saveStore();renderStudents(document.getElementById('pageContent'));closeDrawer();toast('Сохранено');
+}
+function toggleStudentStatus(id){
+  const s=state.students.find(x=>x.id===id);if(!s)return;
+  s.status=s.status==='active'?'paused':'active';saveStore();renderStudents(document.getElementById('pageContent'));
+}
+function deleteStudent(id){
+  if(!confirm('Удалить ученика?'))return;
+  state.students=state.students.filter(s=>s.id!==id);saveStore();renderStudents(document.getElementById('pageContent'));toast('Удалено');
+}
+function newStudent(){
+  const id=Math.max(0,...state.students.map(s=>s.id))+1;
+  state.students.unshift({id,name:'Новый ученик',phone:'+7 ___',level:'C',plan:'Старт',visits:0,since:new Date().toISOString().slice(0,10),status:'active'});
+  saveStore();renderStudents(document.getElementById('pageContent'));openStudent(id);
+}
+
+/* ============= PROGRAMS ============= */
+function renderPrograms(c){
+  c.innerHTML=`<div class="page-head"><div><div class="page-title">ПРОГРАММЫ</div><div class="page-sub">Редактирование секции на лендинге</div></div><div class="page-actions"><button class="btn btn-primary" onclick="addProgram()">+ Программа</button></div></div>
+   <div class="editor-grid">${state.programs.map((p,i)=>programEditor(p,i)).join('')}</div>`;
+}
+function programEditor(p,i){
+  return `<div class="editor-card">
+    <h3>${escapeHtml(p.name)}</h3><div class="editor-cat">${escapeHtml(p.level)}</div>
+    <div class="field"><label>Название</label><input data-pid="${p.id}" data-key="name" value="${escapeAttr(p.name)}"/></div>
+    <div class="field"><label>Уровень</label><input data-pid="${p.id}" data-key="level" value="${escapeAttr(p.level)}"/></div>
+    <div class="field"><label>Стоимость</label><input data-pid="${p.id}" data-key="price" value="${escapeAttr(p.price)}"/></div>
+    <div class="field"><label>Частота</label><input data-pid="${p.id}" data-key="sessions" value="${escapeAttr(p.sessions)}"/></div>
+    <div class="field"><label>Описание</label><textarea data-pid="${p.id}" data-key="desc">${escapeHtml(p.desc)}</textarea></div>
+    <div class="editor-actions"><button class="btn btn-primary" onclick="saveProgram(${p.id})">Сохранить</button><button class="btn btn-danger" onclick="deleteProgram(${p.id})">Удалить</button></div>
+  </div>`;
+}
+function saveProgram(id){
+  const p=state.programs.find(x=>x.id===id);if(!p)return;
+  document.querySelectorAll(`[data-pid="${id}"]`).forEach(inp=>{p[inp.dataset.key]=inp.value});
+  saveStore();renderPrograms(document.getElementById('pageContent'));toast('Сохранено');
+}
+function deleteProgram(id){if(!confirm('Удалить?'))return;state.programs=state.programs.filter(p=>p.id!==id);saveStore();renderPrograms(document.getElementById('pageContent'))}
+function addProgram(){const id=Math.max(0,...state.programs.map(p=>p.id))+1;state.programs.push({id,name:'НОВАЯ',level:'',price:'',sessions:'',desc:''});saveStore();renderPrograms(document.getElementById('pageContent'))}
+
+/* ============= PRICES ============= */
+function renderPrices(c){
+  c.innerHTML=`<div class="page-head"><div><div class="page-title">ЦЕНЫ</div><div class="page-sub">Тарифные пакеты</div></div></div>
+   <div class="editor-grid">${state.prices.map(p=>`
+     <div class="editor-card">
+       <h3>${escapeHtml(p.name)}</h3><div class="editor-cat">${p.popular?'★ Популярный':' '}</div>
+       <div class="field"><label>Название</label><input data-pid="${p.id}" data-key="name" value="${escapeAttr(p.name)}"/></div>
+       <div class="field"><label>Цена (₽)</label><input data-pid="${p.id}" data-key="price" type="number" value="${p.price}"/></div>
+       <div class="field"><label>Период</label><input data-pid="${p.id}" data-key="period" value="${escapeAttr(p.period)}"/></div>
+       <div class="field"><label><input type="checkbox" data-pid="${p.id}" data-key="popular" ${p.popular?'checked':''}/> Отметить как популярный</label></div>
+       <div class="editor-actions"><button class="btn btn-primary" onclick="savePrice(${p.id})">Сохранить</button></div>
+     </div>`).join('')}</div>`;
+}
+function savePrice(id){
+  const p=state.prices.find(x=>x.id===id);
+  document.querySelectorAll(`[data-pid="${id}"]`).forEach(inp=>{
+    const v=inp.type==='checkbox'?inp.checked:(inp.type==='number'?Number(inp.value):inp.value);
+    p[inp.dataset.key]=v;
+  });
+  saveStore();toast('Сохранено');renderPrices(document.getElementById('pageContent'));
+}
+
+/* ============= TESTIMONIALS ============= */
+function renderTestimonials(c){
+  c.innerHTML=`<div class="page-head"><div><div class="page-title">ОТЗЫВЫ</div><div class="page-sub">${state.testimonials.length} отзывов</div></div><div class="page-actions"><button class="btn btn-primary" onclick="addTest()">+ Отзыв</button></div></div>
+  <div class="editor-grid">${state.testimonials.map(t=>`
+   <div class="editor-card">
+     <h3>${escapeHtml(t.author)}</h3><div class="editor-cat">${escapeHtml(t.role)}</div>
+     <div class="field"><label>Автор</label><input data-tid="${t.id}" data-key="author" value="${escapeAttr(t.author)}"/></div>
+     <div class="field"><label>Уровень</label><input data-tid="${t.id}" data-key="role" value="${escapeAttr(t.role)}"/></div>
+     <div class="field"><label>Текст</label><textarea data-tid="${t.id}" data-key="text">${escapeHtml(t.text)}</textarea></div>
+     <div class="editor-actions"><button class="btn btn-primary" onclick="saveTest(${t.id})">Сохранить</button><button class="btn btn-danger" onclick="delTest(${t.id})">Удалить</button></div>
+   </div>`).join('')}</div>`;
+}
+function saveTest(id){const t=state.testimonials.find(x=>x.id===id);document.querySelectorAll(`[data-tid="${id}"]`).forEach(i=>t[i.dataset.key]=i.value);saveStore();renderTestimonials(document.getElementById('pageContent'));toast('Сохранено')}
+function delTest(id){if(!confirm('Удалить?'))return;state.testimonials=state.testimonials.filter(t=>t.id!==id);saveStore();renderTestimonials(document.getElementById('pageContent'))}
+function addTest(){const id=Math.max(0,...state.testimonials.map(t=>t.id))+1;state.testimonials.push({id,author:'Новый автор',role:'Уровень C',text:'Текст отзыва...'});saveStore();renderTestimonials(document.getElementById('pageContent'))}
+
+/* ============= TEXTS ============= */
+const TEXT_GROUPS=[
+  {title:'HERO — главный экран',cat:'Первый блок лендинга',fields:[
+    {key:'hero_eyebrow',label:'Надзаголовок',type:'input'},
+    {key:'hero_title',label:'Заголовок',type:'input'},
+    {key:'hero_tag',label:'Слоган',type:'input'},
+    {key:'hero_sub',label:'Подзаголовок',type:'textarea'},
+    {key:'hero_cta',label:'Кнопка 1 (CTA)',type:'input'},
+    {key:'hero_cta2',label:'Кнопка 2',type:'input'},
+  ]},
+  {title:'О НАС',cat:'Секция About',fields:[
+    {key:'about_eyebrow',label:'Надзаголовок',type:'input'},
+    {key:'about_title',label:'Заголовок',type:'input'},
+    {key:'about_lead',label:'Лид-абзац',type:'textarea'},
+    {key:'about_p1',label:'Параграф 1',type:'textarea'},
+    {key:'about_p2',label:'Параграф 2',type:'textarea'},
+  ]},
+  {title:'ПРОГРАММЫ',cat:'Заголовки секции',fields:[
+    {key:'programs_eyebrow',label:'Надзаголовок',type:'input'},
+    {key:'programs_title',label:'Заголовок',type:'input'},
+    {key:'programs_sub',label:'Подзаголовок',type:'textarea'},
+  ]},
+  {title:'РАСПИСАНИЕ',cat:'Заголовки секции',fields:[
+    {key:'schedule_eyebrow',label:'Надзаголовок',type:'input'},
+    {key:'schedule_title',label:'Заголовок',type:'input'},
+    {key:'schedule_sub',label:'Подзаголовок',type:'textarea'},
+  ]},
+  {title:'ЦЕНЫ',cat:'Заголовки секции',fields:[
+    {key:'prices_eyebrow',label:'Надзаголовок',type:'input'},
+    {key:'prices_title',label:'Заголовок',type:'input'},
+    {key:'prices_sub',label:'Подзаголовок',type:'textarea'},
+  ]},
+  {title:'SHOWREEL',cat:'Видео-блок',fields:[
+    {key:'showreel_eyebrow',label:'Надзаголовок',type:'input'},
+    {key:'showreel_title',label:'Заголовок',type:'input'},
+    {key:'showreel_sub',label:'Подзаголовок',type:'input'},
+  ]},
+  {title:'ОТЗЫВЫ',cat:'Заголовки секции',fields:[
+    {key:'test_eyebrow',label:'Надзаголовок',type:'input'},
+    {key:'test_title',label:'Заголовок',type:'input'},
+  ]},
+  {title:'КОНТАКТЫ',cat:'Форма и реквизиты',fields:[
+    {key:'contact_eyebrow',label:'Надзаголовок',type:'input'},
+    {key:'contact_title',label:'Заголовок',type:'input'},
+    {key:'contact_sub',label:'Подзаголовок',type:'textarea'},
+    {key:'contact_phone',label:'Телефон',type:'input'},
+    {key:'contact_email',label:'Email',type:'input'},
+    {key:'contact_address',label:'Адрес',type:'input'},
+  ]},
+  {title:'ФУТЕР',cat:'Низ страницы',fields:[
+    {key:'footer_text',label:'Копирайт',type:'input'},
+  ]},
+];
+function renderTexts(c){
+  if(!state.texts)state.texts={};
+  c.innerHTML=`<div class="page-head"><div><div class="page-title">ТЕКСТЫ</div><div class="page-sub">Все текстовые блоки лендинга — заголовки, описания, кнопки</div></div><div class="page-actions"><button class="btn" onclick="resetTexts()">↺ Сбросить</button><button class="btn btn-primary" onclick="saveAllTexts()">Сохранить всё</button></div></div>
+   <div class="editor-grid">${TEXT_GROUPS.map(g=>`
+     <div class="editor-card">
+       <h3>${g.title}</h3><div class="editor-cat">${g.cat}</div>
+       ${g.fields.map(f=>`<div class="field"><label>${f.label}</label>${f.type==='textarea'?`<textarea data-tkey="${f.key}">${escapeHtml(state.texts[f.key]||'')}</textarea>`:`<input data-tkey="${f.key}" value="${escapeAttr(state.texts[f.key]||'')}"/>`}</div>`).join('')}
+     </div>`).join('')}</div>`;
+}
+function saveAllTexts(){
+  if(!state.texts)state.texts={};
+  document.querySelectorAll('[data-tkey]').forEach(inp=>{state.texts[inp.dataset.tkey]=inp.value});
+  saveStore();toast('Тексты сохранены');
+}
+function resetTexts(){
+  if(!confirm('Сбросить все тексты к значениям по умолчанию?'))return;
+  state.texts=JSON.parse(JSON.stringify(SEED.texts));
+  saveStore();renderTexts(document.getElementById('pageContent'));toast('Сброшено');
+}
+
+/* ============= MEDIA ============= */
+function renderMedia(c){
+  if(!state.media)state.media={};
+  const m=state.media;
+  const previewSrc=m.showreel_url||'';
+  c.innerHTML=`<div class="page-head">
+    <div><div class="page-title">ВИДЕО И МЕДИА</div><div class="page-sub">Showreel, hero-видео и постеры</div></div>
+   </div>
+   <div class="editor-grid">
+     <div class="editor-card">
+       <h3>SHOWREEL</h3><div class="editor-cat">Главное видео секции</div>
+       <div class="field"><label>URL видео (mp4 / YouTube / Vimeo)</label><input id="med_showreel_url" value="${escapeAttr(m.showreel_url||'')}" placeholder="https://..."/></div>
+       <div class="field"><label>Или загрузить файл с устройства</label><input type="file" accept="video/*" id="med_showreel_file" onchange="handleVideoUpload(event,'showreel_url')"/></div>
+       <div class="field"><label>Постер (превью-картинка, URL)</label><input id="med_showreel_poster" value="${escapeAttr(m.showreel_poster||'')}" placeholder="https://..."/></div>
+       <div class="field"><label>Или загрузить постер</label><input type="file" accept="image/*" id="med_showreel_poster_file" onchange="handleImageUpload(event,'showreel_poster')"/></div>
+       <div class="field"><label>Подпись под видео</label><input id="med_showreel_caption" value="${escapeAttr(m.showreel_caption||'')}"/></div>
+       <div class="editor-actions"><button class="btn btn-primary" onclick="saveMedia()">Сохранить</button><button class="btn btn-danger" onclick="clearMedia('showreel_url')">Удалить видео</button></div>
+     </div>
+     <div class="editor-card">
+       <h3>ПРЕДПРОСМОТР</h3><div class="editor-cat">Текущее showreel-видео</div>
+       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
+         ${previewSrc?(isYouTube(previewSrc)?`<iframe src="${escapeAttr(ytEmbed(previewSrc))}" style="width:100%;height:100%;border:0" allowfullscreen></iframe>`:`<video src="${escapeAttr(previewSrc)}" controls poster="${escapeAttr(m.showreel_poster||'')}" style="width:100%;height:100%;object-fit:cover"></video>`):`<div style="text-align:center;color:var(--muted)"><div style="font-size:48px;opacity:.3">▶</div><div style="font-size:12px;margin-top:8px">Видео не загружено</div></div>`}
+       </div>
+       <div style="margin-top:14px;font-size:11px;color:var(--muted);line-height:1.6">
+         <div><strong style="color:var(--muted2)">Источник:</strong> ${previewSrc?(isYouTube(previewSrc)?'YouTube':(previewSrc.startsWith('data:')?'Загруженный файл':'Внешний URL')):'—'}</div>
+         <div><strong style="color:var(--muted2)">Постер:</strong> ${m.showreel_poster?'установлен':'не установлен'}</div>
+       </div>
+     </div>
+     <div class="editor-card">
+       <h3>HERO-ВИДЕО</h3><div class="editor-cat">Фоновое видео в Hero (опционально)</div>
+       <div class="field"><label>URL фонового видео</label><input id="med_hero_video_url" value="${escapeAttr(m.hero_video_url||'')}" placeholder="https://... mp4"/></div>
+       <div class="field"><label>Или загрузить файл</label><input type="file" accept="video/*" onchange="handleVideoUpload(event,'hero_video_url')"/></div>
+       <div class="editor-actions"><button class="btn btn-primary" onclick="saveMedia()">Сохранить</button><button class="btn btn-danger" onclick="clearMedia('hero_video_url')">Удалить</button></div>
+     </div>
+     <div class="editor-card" style="background:var(--bg2)">
+       <h3>ПОДСКАЗКИ</h3><div class="editor-cat">Как это работает</div>
+       <div style="font-size:12px;color:var(--muted2);line-height:1.7">
+         <p style="margin-bottom:10px">• Вставьте прямую ссылку на <code style="color:var(--accent)">.mp4</code> или YouTube/Vimeo URL.</p>
+         <p style="margin-bottom:10px">• Файлы до ~5 МБ хранятся в браузере (localStorage). Большие — лучше внешний URL.</p>
+         <p style="margin-bottom:10px">• Постер показывается до запуска воспроизведения.</p>
+         <p>• Изменения отражаются на лендинге, если он подключён к этому хранилищу.</p>
+       </div>
+     </div>
+   </div>`;
+}
+function isYouTube(u){return /youtube\.com|youtu\.be/.test(u||'')}
+function ytEmbed(u){const m=u.match(/(?:youtu\.be\/|v=)([\w-]+)/);return m?`https://www.youtube.com/embed/${m[1]}`:u}
+function saveMedia(){
+  if(!state.media)state.media={};
+  ['showreel_url','showreel_poster','showreel_caption','hero_video_url'].forEach(k=>{
+    const el=document.getElementById('med_'+k);if(el)state.media[k]=el.value;
+  });
+  try{saveStore();toast('Медиа сохранено');renderMedia(document.getElementById('pageContent'))}
+  catch(e){toast('Файл слишком большой для localStorage — используйте URL')}
+}
+function clearMedia(key){state.media[key]='';saveStore();renderMedia(document.getElementById('pageContent'));toast('Удалено')}
+function handleVideoUpload(e,key){
+  const f=e.target.files[0];if(!f)return;
+  if(f.size>6*1024*1024){toast('Файл больше 6 МБ — используйте внешний URL');return}
+  const r=new FileReader();r.onload=()=>{
+    state.media[key]=r.result;
+    try{saveStore();toast('Видео загружено');renderMedia(document.getElementById('pageContent'))}
+    catch(err){toast('Не помещается в хранилище')}
+  };r.readAsDataURL(f);
+}
+function handleImageUpload(e,key){
+  const f=e.target.files[0];if(!f)return;
+  if(f.size>2*1024*1024){toast('Картинка больше 2 МБ');return}
+  const r=new FileReader();r.onload=()=>{state.media[key]=r.result;saveStore();toast('Загружено');renderMedia(document.getElementById('pageContent'))};r.readAsDataURL(f);
+}
+
+/* ============= COACHES ============= */
+function renderCoaches(c){
+  if(!state.coaches)state.coaches=[];
+  c.innerHTML=`<div class="page-head">
+    <div><div class="page-title">ТРЕНЕРЫ</div><div class="page-sub">${state.coaches.length} в команде · фото и био</div></div>
+    <div class="page-actions"><button class="btn btn-primary" onclick="addCoach()">+ Добавить тренера</button></div>
+   </div>
+   <div class="editor-grid">${state.coaches.map(co=>`
+     <div class="editor-card">
+       <div style="display:flex;gap:18px;margin-bottom:18px;align-items:flex-start">
+         <div style="width:96px;height:96px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;${co.photo?`background-image:url('${co.photo}');background-size:cover;background-position:center`:''}">
+           ${co.photo?'':`<div style="font-family:var(--font-head);font-size:36px;color:var(--muted);font-weight:800">${(co.name||'?')[0]}</div>`}
+         </div>
+         <div style="flex:1;min-width:0">
+           <h3 style="margin-bottom:2px">${escapeHtml(co.name||'—')}</h3>
+           <div class="editor-cat">${escapeHtml(co.role||'')} · ${escapeHtml(co.level||'')}</div>
+           <div style="margin-top:10px"><label class="btn" style="display:inline-flex;cursor:pointer;font-size:11px">↑ Фото<input type="file" accept="image/*" style="display:none" onchange="handleCoachPhoto(event,${co.id})"/></label>
+           ${co.photo?`<button class="btn btn-danger" style="font-size:11px;margin-left:6px" onclick="clearCoachPhoto(${co.id})">✕</button>`:''}</div>
+         </div>
+       </div>
+       <div class="field"><label>Имя</label><input data-cid="${co.id}" data-key="name" value="${escapeAttr(co.name||'')}"/></div>
+       <div class="field"><label>Роль</label><input data-cid="${co.id}" data-key="role" value="${escapeAttr(co.role||'')}" placeholder="Head Coach / Junior Coach"/></div>
+       <div class="field"><label>Уровень</label><input data-cid="${co.id}" data-key="level" value="${escapeAttr(co.level||'')}" placeholder="A / B / C"/></div>
+       <div class="field"><label>Биография</label><textarea data-cid="${co.id}" data-key="bio">${escapeHtml(co.bio||'')}</textarea></div>
+       <div class="field"><label>URL фото (опционально)</label><input data-cid="${co.id}" data-key="photo" value="${escapeAttr(co.photo&&!co.photo.startsWith('data:')?co.photo:'')}" placeholder="https://... или загрузите выше"/></div>
+       <div style="border-top:1px solid var(--border);margin:14px 0 8px;padding-top:14px"><div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px">▶ Видео тренера</div>
+         ${co.video?`<div style="background:#000;border-radius:8px;aspect-ratio:16/9;overflow:hidden;margin-bottom:10px;border:1px solid var(--border)">${isYouTube(co.video)?`<iframe src="${escapeAttr(ytEmbed(co.video))}" style="width:100%;height:100%;border:0" allowfullscreen></iframe>`:`<video src="${escapeAttr(co.video)}" controls style="width:100%;height:100%;object-fit:cover"></video>`}</div>`:''}
+         <div class="field"><label>URL видео (mp4 / YouTube)</label><input data-cid="${co.id}" data-key="video" value="${escapeAttr(co.video&&!co.video.startsWith('data:')?co.video:'')}" placeholder="https://..."/></div>
+         <div style="display:flex;gap:8px;align-items:center"><label class="btn" style="display:inline-flex;cursor:pointer;font-size:11px">↑ Загрузить видео<input type="file" accept="video/*" style="display:none" onchange="handleCoachVideo(event,${co.id})"/></label>${co.video?`<button class="btn btn-danger" style="font-size:11px" onclick="clearCoachVideo(${co.id})">✕ Удалить видео</button>`:''}</div>
+       </div>
+       <div class="editor-actions"><button class="btn btn-primary" onclick="saveCoach(${co.id})">Сохранить</button><button class="btn btn-danger" onclick="delCoach(${co.id})">Удалить</button></div>
+     </div>`).join('')}</div>`;
+}
+function saveCoach(id){
+  const co=state.coaches.find(x=>x.id===id);if(!co)return;
+  document.querySelectorAll(`[data-cid="${id}"]`).forEach(i=>{
+    if(i.dataset.key==='photo'||i.dataset.key==='video'){if(i.value)co[i.dataset.key]=i.value}
+    else co[i.dataset.key]=i.value;
+  });
+  saveStore();renderCoaches(document.getElementById('pageContent'));toast('Сохранено');
+}
+function delCoach(id){if(!confirm('Удалить тренера?'))return;state.coaches=state.coaches.filter(c=>c.id!==id);saveStore();renderCoaches(document.getElementById('pageContent'));toast('Удалено')}
+function addCoach(){const id=Math.max(0,...state.coaches.map(c=>c.id))+1;state.coaches.push({id,name:'Новый тренер',role:'Junior Coach',level:'B',bio:'',photo:'',video:''});saveStore();renderCoaches(document.getElementById('pageContent'))}
+function handleCoachVideo(e,id){
+  const f=e.target.files[0];if(!f)return;
+  if(f.size>6*1024*1024){toast('Видео больше 6 МБ — используйте URL');return}
+  const r=new FileReader();r.onload=()=>{
+    const co=state.coaches.find(x=>x.id===id);if(!co)return;
+    co.video=r.result;
+    try{saveStore();toast('Видео загружено');renderCoaches(document.getElementById('pageContent'))}
+    catch(err){toast('Не помещается в хранилище — используйте URL')}
+  };r.readAsDataURL(f);
+}
+function clearCoachVideo(id){const co=state.coaches.find(x=>x.id===id);if(!co)return;co.video='';saveStore();renderCoaches(document.getElementById('pageContent'));toast('Видео удалено')}
+function handleCoachPhoto(e,id){
+  const f=e.target.files[0];if(!f)return;
+  if(f.size>2*1024*1024){toast('Фото больше 2 МБ — сжмите или используйте URL');return}
+  const r=new FileReader();r.onload=()=>{
+    const co=state.coaches.find(x=>x.id===id);if(!co)return;
+    co.photo=r.result;
+    try{saveStore();toast('Фото загружено');renderCoaches(document.getElementById('pageContent'))}
+    catch(err){toast('Не помещается в хранилище — используйте URL')}
+  };r.readAsDataURL(f);
+}
+function clearCoachPhoto(id){const co=state.coaches.find(x=>x.id===id);if(!co)return;co.photo='';saveStore();renderCoaches(document.getElementById('pageContent'))}
+
+/* ============= UTILS ============= */
+function escapeHtml(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function escapeAttr(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+/* GLOBAL SEARCH */
+document.getElementById('globalSearch').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){const q=e.target.value.trim();if(!q)return;
+    if(/\d/.test(q)||/[+]/.test(q))navigate('inbox');
+    else navigate('students');
+    setTimeout(()=>{const inp=document.querySelector('#leadSearch,#stSearch');if(inp){inp.value=q;inp.dispatchEvent(new Event('input'))}},50);
   }
-
-  // Search & filter
-  document.getElementById('search-input').addEventListener('input', applyFiltersAndRender);
-  document.getElementById('date-filter').addEventListener('change', applyFiltersAndRender);
-
-  // Refresh
-  document.getElementById('refresh-btn').addEventListener('click', async () => {
-    const btn = document.getElementById('refresh-btn');
-    btn.textContent = '…';
-    try {
-      const res = await fetch(`/api/leads?secret=${encodeURIComponent(secret)}`);
-      if (!res.ok) { toast('Ошибка обновления'); return; }
-      allLeads = await res.json();
-      applyFiltersAndRender();
-      toast('Обновлено');
-    } catch {
-      toast('Ошибка соединения');
-    } finally {
-      btn.textContent = '⟳ Обновить';
-    }
-  });
-
-  // Export CSV
-  document.getElementById('export-btn').addEventListener('click', () => {
-    const rows = [['ID','Имя','Телефон','Комментарий','Дата','IP']];
-    filtered.forEach(l => rows.push([l.id, l.name, l.phone, l.comment ?? '', l.created_at, l.ip ?? '']));
-    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `savvateam-leads-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-    toast('CSV скачан');
-  });
+});
 </script>
 </body>
 </html>
