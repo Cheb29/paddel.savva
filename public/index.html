@@ -887,22 +887,51 @@
     .sch-legend-item { display: flex; align-items: center; gap: 9px; }
     .sch-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 14px rgba(86,211,123,0.6); }
     .sch-dot.warm { background: var(--sch-warm); box-shadow: 0 0 14px rgba(255,179,71,0.55); }
-    /* мобильный список расписания (сгруппирован по дням) — скрыт на десктопе */
+    /* мобильный вид расписания (фильтр по дням + колонка) — скрыт на десктопе */
     .sch-mobile { display: none; }
-    .sch-mday {
-      margin: 26px 0 12px;
-      color: var(--accent);
-      font-weight: 900;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      font-size: 13px;
+    .sch-mfilter {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 22px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
-    .sch-mobile .sch-card { margin-bottom: 12px; }
+    .sch-mfilter::-webkit-scrollbar { display: none; }
+    .sch-mtab {
+      flex: 0 0 auto;
+      padding: 10px 20px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-family: inherit;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    .sch-mtab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0a0a0a;
+    }
+    .sch-mtime {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+    .sch-mobile .sch-card { margin-bottom: 14px; }
+    .sch-mempty { color: var(--muted); font-size: 13px; padding: 18px 0; }
     @media (max-width: 760px) {
       .sch-wrap { padding: 0; background: transparent; border: 0; overflow: visible; }
       .sch-grid { display: none; }
       .sch-mobile { display: block; }
-      .sch-mobile .sch-mtime { color: var(--muted); font-size: 11px; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.5px; }
     }
 
     /* PRICES */
@@ -2601,20 +2630,22 @@ function renderSchedule(c) {
   });
   grid.innerHTML = html;
 
-  // Мобильный список: сгруппирован по дням
+  // Мобильный вид: фильтр по дням (таблетки) + колонка занятий выбранного дня
+  let mDayHtml = [];
   if (mobile) {
-    let mhtml = '';
-    for (let i = 0; i < days.length; i++) {
+    mDayHtml = days.map((d, i) => {
       const dayCards = data.rows
         .map(row => ({ cell: (row.cells || [])[i], time: row.time }))
         .filter(x => x.cell && x.cell.title);
-      if (!dayCards.length) continue;
-      mhtml += `<div class="sch-mday">${esc(days[i])}</div>`;
-      dayCards.forEach(x => {
-        mhtml += `<div class="sch-mtime">${esc(x.time)}</div>` + cardHtml(x.cell, days[i], x.time);
-      });
-    }
-    mobile.innerHTML = mhtml;
+      if (!dayCards.length) return '<div class="sch-mempty">В этот день занятий нет</div>';
+      return dayCards.map(x => `<div class="sch-mtime">${esc(x.time)}</div>` + cardHtml(x.cell, d, x.time)).join('');
+    });
+    // день по умолчанию: текущий день недели, если он есть в расписании, иначе первый
+    const WD = ['ВС','ПН','ВТ','СР','ЧТ','ПТ','СБ'];
+    let active = days.indexOf(WD[new Date().getDay()]);
+    if (active < 0) active = 0;
+    const tabs = days.map((d, i) => `<button type="button" class="sch-mtab${i === active ? ' active' : ''}" data-day="${i}">${esc(d)}</button>`).join('');
+    mobile.innerHTML = `<div class="sch-mfilter">${tabs}</div><div class="sch-mpanel" id="sch-mpanel">${mDayHtml[active] || ''}</div>`;
   }
 
   // Легенда — авто из встречающихся cat
@@ -2634,10 +2665,26 @@ function renderSchedule(c) {
     if (contact) contact.scrollIntoView({ behavior: 'smooth' });
     if (field) setTimeout(() => field.focus({ preventScroll: true }), 600);
   };
-  document.querySelectorAll('.sch-card').forEach(card => {
-    card.addEventListener('click', () => goBook(card.dataset.book));
-    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goBook(card.dataset.book); } });
-  });
+  const bindCards = (root) => {
+    root.querySelectorAll('.sch-card').forEach(card => {
+      card.addEventListener('click', () => goBook(card.dataset.book));
+      card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goBook(card.dataset.book); } });
+    });
+  };
+  bindCards(grid);
+
+  // Мобильный фильтр: переключение дня + перепривязка карточек панели
+  if (mobile) {
+    const panel = mobile.querySelector('#sch-mpanel');
+    if (panel) bindCards(panel);
+    mobile.querySelectorAll('.sch-mtab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        mobile.querySelectorAll('.sch-mtab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        if (panel) { panel.innerHTML = mDayHtml[+tab.dataset.day] || ''; bindCards(panel); }
+      });
+    });
+  }
 }
 </script>
 
