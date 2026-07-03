@@ -327,6 +327,16 @@ app.post('/api/contact', (req, res) => {
 
   const row = insertLead.run(name.trim(), phone.trim(), comment?.trim() ?? '', ip);
 
+  // Фаза 1: авто-заготовка ученика из лида (дедуп по телефону среди неподтверждённых)
+  try {
+    if (!findUnconfirmedByPhone.get(phone.trim())) {
+      insertStudent.run({
+        name: name.trim(), phone: phone.trim(),
+        level: null, audience: null, gender: null, confirmed: 0, source: 'lead',
+      });
+    }
+  } catch (e) { /* не блокируем ответ формы */ }
+
   sendTelegram(
     `📩 <b>Новая заявка #${row.lastInsertRowid}</b>\n` +
     `👤 Имя: ${name.trim()}\n` +
