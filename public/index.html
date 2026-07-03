@@ -775,55 +775,134 @@
 
     /* SCHEDULE */
     #schedule { background: var(--bg2); }
-    .schedule-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 2px;
-      margin-top: 64px;
-    }
-    .day-col { display: flex; flex-direction: column; gap: 2px; }
-    .day-header {
+    .sch-wrap {
+      margin-top: 56px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 28px;
       background: var(--surface);
-      padding: 16px 12px;
+      overflow-x: auto;
+      --sch-warm: #FFB347;
+    }
+    .sch-grid {
+      /* grid-template-columns задаётся из JS по числу дней */
+      display: grid;
+      gap: 14px;
+    }
+    .sch-head {
+      padding: 18px 16px;
+      border-radius: 18px;
+      background: var(--bg2);
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      text-align: center;
+      border-bottom: 2px solid var(--accent);
+    }
+    .sch-time {
+      min-height: 92px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      background: rgba(255,255,255,0.025);
+      border-radius: 18px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      white-space: nowrap;
       text-align: center;
     }
-    .day-name {
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .day-slot {
-      background: var(--surface);
-      padding: 12px;
-      min-height: 72px;
+    .sch-cell { min-height: 92px; display: flex; align-items: stretch; }
+    .sch-empty { opacity: 0; pointer-events: none; }
+    .sch-card {
+      width: 100%;
+      padding: 18px 18px 16px;
+      border-radius: 18px;
+      background: linear-gradient(145deg, rgba(22,22,22,0.98), rgba(10,10,10,0.96));
+      border: 1px solid var(--accent-dim);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
       position: relative;
       overflow: hidden;
-      cursor: none;
-      transition: background 0.25s;
+      cursor: pointer;
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
     }
-    .day-slot.has-class {
-      background: var(--accent-dim);
-      border-left: 2px solid var(--accent);
+    .sch-card::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 16px; bottom: 16px;
+      width: 3px; border-radius: 10px;
+      background: var(--accent);
     }
-    .day-slot.has-class:hover { background: oklch(72% 0.22 145 / 0.22); }
-    .slot-time {
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--muted);
-      margin-bottom: 4px;
+    .sch-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 18px 36px rgba(86,211,123,0.12);
     }
-    .slot-name {
-      font-size: 11px;
-      font-weight: 600;
+    .sch-card .t {
+      font-size: 18px;
+      line-height: 1.15;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: -0.2px;
       color: var(--text);
-      line-height: 1.3;
     }
-    .slot-level {
-      font-size: 10px;
+    .sch-card .m {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      font-weight: 700;
+    }
+    .sch-card.men::before { background: var(--sch-warm); }
+    .sch-card.kids::before { background: linear-gradient(180deg, var(--accent), var(--sch-warm)); }
+    .sch-card.extreme {
+      border-color: rgba(86,211,123,0.45);
+      box-shadow: inset 0 0 22px rgba(86,211,123,0.08), 0 0 24px rgba(86,211,123,0.08);
+    }
+    .sch-card.extreme::after {
+      content: "";
+      position: absolute;
+      right: -38px; top: -38px;
+      width: 92px; height: 92px;
+      border-radius: 50%;
+      background: rgba(86,211,123,0.18);
+      filter: blur(12px);
+    }
+    .sch-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+    .sch-legend-item { display: flex; align-items: center; gap: 9px; }
+    .sch-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 14px rgba(86,211,123,0.6); }
+    .sch-dot.warm { background: var(--sch-warm); box-shadow: 0 0 14px rgba(255,179,71,0.55); }
+    /* мобильный список расписания (сгруппирован по дням) — скрыт на десктопе */
+    .sch-mobile { display: none; }
+    .sch-mday {
+      margin: 26px 0 12px;
       color: var(--accent);
-      margin-top: 2px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-size: 13px;
+    }
+    .sch-mobile .sch-card { margin-bottom: 12px; }
+    @media (max-width: 760px) {
+      .sch-wrap { padding: 0; background: transparent; border: 0; overflow: visible; }
+      .sch-grid { display: none; }
+      .sch-mobile { display: block; }
+      .sch-mobile .sch-mtime { color: var(--muted); font-size: 11px; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.5px; }
     }
 
     /* PRICES */
@@ -1420,8 +1499,13 @@
     .marquee-track {
       display: flex;
       gap: 0;
-      animation: marquee 20s linear infinite;
+      animation: marquee 55s linear infinite;
       width: max-content;
+      will-change: transform;
+    }
+    .marquee-group {
+      display: flex;
+      flex-shrink: 0;
     }
     .marquee-item {
       font-family: var(--font-head);
@@ -1499,7 +1583,6 @@
       .about-grid { grid-template-columns: 1fr; gap: 48px; }
       .about-visual { aspect-ratio: 16/10; max-width: 540px; }
       .contact-grid { grid-template-columns: 1fr; gap: 48px; }
-      .schedule-grid { grid-template-columns: repeat(7, minmax(110px, 1fr)); overflow-x: auto; }
       .coach-block { min-height: auto; flex-direction: column; }
       .coach-block.reverse { flex-direction: column; }
       .coach-text { flex: 1 1 auto; padding: 40px 32px; }
@@ -1575,8 +1658,6 @@
       .hero-scroll { display: none; }
       .hero-stats, .hero-right-badge { display: none; }
       .hero-bottom-bar {
-        position: relative;
-        bottom: auto;
         padding: 18px 22px;
         gap: 12px;
         flex-wrap: wrap;
@@ -1610,16 +1691,6 @@
       .program-num { font-size: 48px; }
       .program-name { font-size: 26px; }
 
-      /* SCHEDULE — horizontal scroll */
-      .schedule-grid {
-        grid-template-columns: repeat(7, 130px);
-        overflow-x: auto;
-        margin-top: 40px;
-        padding-bottom: 8px;
-        -webkit-overflow-scrolling: touch;
-      }
-      .schedule-grid::-webkit-scrollbar { height: 4px; }
-      .schedule-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
       /* PRICES */
       .prices-grid { grid-template-columns: 1fr; gap: 14px; margin-top: 40px; }
@@ -1761,23 +1832,47 @@ function closeMenu(){
     <div class="hero-bottom-stat"><span class="hero-bottom-num" data-content="hero_stat1_num">200+</span><span class="hero-bottom-label" data-content="hero_stat1_label">Учеников</span></div>
     <div class="hero-bottom-stat"><span class="hero-bottom-num" data-content="hero_stat2_num">10</span><span class="hero-bottom-label" data-content="hero_stat2_label">Крытых кортов</span></div>
     <div class="hero-bottom-stat"><span class="hero-bottom-num" data-content="hero_stat3_num">3</span><span class="hero-bottom-label" data-content="hero_stat3_label">Тренера</span></div>
-    <div class="hero-bottom-stat"><span class="hero-bottom-num" data-content="hero_stat4_num">от 5 000 ₽</span><span class="hero-bottom-label" data-content="hero_stat4_label">занятие</span></div>
+    <div class="hero-bottom-stat"><span class="hero-bottom-num" data-content="hero_stat4_num">от 4 000 ₽</span><span class="hero-bottom-label" data-content="hero_stat4_label">занятие</span></div>
   </div>
 </section>
 
 <!-- MARQUEE -->
 <div class="marquee-wrap">
   <div class="marquee-track" id="marquee">
-    <div class="marquee-item">ПАДЕЛ <span class="marquee-dot"></span></div>
-    <div class="marquee-item">АКАДЕМИЯ <span class="marquee-dot"></span></div>
-    <div class="marquee-item">ТРЕНИРОВКИ <span class="marquee-dot"></span></div>
-    <div class="marquee-item">ТУРНИРЫ <span class="marquee-dot"></span></div>
-    <div class="marquee-item">SAVVA TEAM <span class="marquee-dot"></span></div>
-    <div class="marquee-item">ПАДЕЛ <span class="marquee-dot"></span></div>
-    <div class="marquee-item">АКАДЕМИЯ <span class="marquee-dot"></span></div>
-    <div class="marquee-item">ТРЕНИРОВКИ <span class="marquee-dot"></span></div>
-    <div class="marquee-item">ТУРНИРЫ <span class="marquee-dot"></span></div>
-    <div class="marquee-item">SAVVA TEAM <span class="marquee-dot"></span></div>
+    <div class="marquee-group">
+      <div class="marquee-item">ПАДЕЛ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">АКАДЕМИЯ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ТРЕНИРОВКИ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ТУРНИРЫ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">SAVVA TEAM <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ПАДЕЛ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">АКАДЕМИЯ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ТРЕНИРОВКИ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ТУРНИРЫ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">SAVVA TEAM <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ПАДЕЛ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">АКАДЕМИЯ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ТРЕНИРОВКИ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ТУРНИРЫ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">SAVVA TEAM <span class="marquee-dot"></span></div>
+    </div>
+    <div class="marquee-group" aria-hidden="true">
+      <div class="marquee-item">ПАДЕЛ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">АКАДЕМИЯ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ТРЕНИРОВКИ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ТУРНИРЫ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">SAVVA TEAM <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ПАДЕЛ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">АКАДЕМИЯ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ТРЕНИРОВКИ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ТУРНИРЫ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">SAVVA TEAM <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ПАДЕЛ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">АКАДЕМИЯ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ТРЕНИРОВКИ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">ТУРНИРЫ <span class="marquee-dot"></span></div>
+      <div class="marquee-item">SAVVA TEAM <span class="marquee-dot"></span></div>
+    </div>
   </div>
 </div>
 
@@ -2202,6 +2297,7 @@ function closeMenu(){
           <label class="form-label">Комментарий</label>
           <textarea id="contactComment" class="form-textarea form-input" placeholder="Ваш опыт, удобное время..."></textarea>
         </div>
+        <input id="contactWebsite" name="website" type="text" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;" aria-hidden="true" />
         <button id="contactSubmit" class="form-submit">Записаться на пробное занятие →</button>
         <div id="contactMsg" style="display:none;margin-top:16px;font-size:14px;font-weight:500;"></div>
       </div>
@@ -2294,6 +2390,23 @@ function loadVideos(cm) {
   const savvaUrl  = cm.coach1_video   || heroUrl;
   const katitaUrl = cm.coach2_video   || 'uploads/coach-katita.mp4';
 
+  // Retry queue for browsers that block autoplay until first touch/click
+  const retryOnGesture = [];
+  const gestureHandler = () => {
+    retryOnGesture.forEach(v => v.play().catch(() => {}));
+    retryOnGesture.length = 0;
+  };
+  document.addEventListener('touchstart', gestureHandler, { once: true, passive: true });
+  document.addEventListener('click',      gestureHandler, { once: true });
+
+  function startVideo(el) {
+    el.load();
+    const p = el.play();
+    if (p && typeof p.then === 'function') {
+      p.catch(() => { retryOnGesture.push(el); });
+    }
+  }
+
   // Hero video — direct src, HTTP range streaming
   const heroVid = document.getElementById('heroVideo');
   const heroFb  = document.getElementById('heroFallback');
@@ -2304,7 +2417,7 @@ function loadVideos(cm) {
       heroFb && (heroFb.style.display = 'block');
     }, { once: true });
     heroVid.src = heroUrl;
-    heroVid.play().catch(() => {});
+    startVideo(heroVid);
   }
 
   // Coach videos — lazy via IntersectionObserver
@@ -2315,7 +2428,7 @@ function loadVideos(cm) {
     const load = () => {
       el.addEventListener('error', () => { el.style.display='none'; fb && (fb.style.display='flex'); }, { once: true });
       el.src = url;
-      el.play().catch(() => {});
+      startVideo(el);
     };
     if ('IntersectionObserver' in window) {
       const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { load(); obs.disconnect(); } }, { rootMargin: '200px' });
@@ -2339,11 +2452,46 @@ window.addEventListener('scroll', () => {
   }
 });
 
+// Phone mask: +7 (___) ___-__-__
+(function() {
+  const inp = document.getElementById('contactPhone');
+  function applyMask(raw) {
+    const d = raw.replace(/\D/g, '').replace(/^[78]/, '');
+    let r = '+7 ';
+    if (d.length > 0) r += '(' + d.slice(0, 3);
+    if (d.length >= 3) r += ') ' + d.slice(3, 6);
+    if (d.length >= 6) r += '-' + d.slice(6, 8);
+    if (d.length >= 8) r += '-' + d.slice(8, 10);
+    return r;
+  }
+  inp.addEventListener('input', function(e) {
+    const pos = this.selectionStart;
+    const prev = this.value;
+    this.value = applyMask(this.value);
+    // держим курсор в конце введённых цифр
+    const diff = this.value.length - prev.length;
+    this.setSelectionRange(pos + diff, pos + diff);
+  });
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Backspace' && this.value === '+7 ') {
+      e.preventDefault();
+      this.value = '';
+    }
+  });
+  inp.addEventListener('focus', function() {
+    if (!this.value) this.value = '+7 ';
+  });
+  inp.addEventListener('blur', function() {
+    if (this.value === '+7 ') this.value = '';
+  });
+})();
+
 // Contact form submission
 document.getElementById('contactSubmit').addEventListener('click', async () => {
   const name    = document.getElementById('contactName').value.trim();
   const phone   = document.getElementById('contactPhone').value.trim();
   const comment = document.getElementById('contactComment').value.trim();
+  const website = document.getElementById('contactWebsite').value;
   const msg     = document.getElementById('contactMsg');
   const btn     = document.getElementById('contactSubmit');
 
@@ -2351,6 +2499,14 @@ document.getElementById('contactSubmit').addEventListener('click', async () => {
     msg.style.display = 'block';
     msg.style.color = '#ff6b6b';
     msg.textContent = 'Пожалуйста, укажите имя и телефон.';
+    return;
+  }
+
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 11) {
+    msg.style.display = 'block';
+    msg.style.color = '#ff6b6b';
+    msg.textContent = 'Введите полный номер телефона.';
     return;
   }
 
@@ -2362,7 +2518,7 @@ document.getElementById('contactSubmit').addEventListener('click', async () => {
     const res = await fetch('/api/contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone, comment }),
+      body: JSON.stringify({ name, phone, comment, website }),
     });
     const data = await res.json();
     if (data.ok) {
