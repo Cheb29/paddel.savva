@@ -311,6 +311,13 @@ const getActiveBooking = db.prepare(
 );
 const cancelBookingById = db.prepare("UPDATE bookings SET status = 'cancelled' WHERE id = ?");
 const getBookingById = db.prepare("SELECT * FROM bookings WHERE id = ?");
+try { db.exec("ALTER TABLE bookings ADD COLUMN duration_min INTEGER"); } catch { /* колонка есть */ }
+const insertIndividualBooking = db.prepare(
+  "INSERT INTO bookings (student_id, type, coach_id, datetime, duration_min) VALUES (?, 'individual', ?, ?, ?)"
+);
+const coachIndividualBookings = db.prepare(
+  "SELECT datetime, duration_min FROM bookings WHERE coach_id = ? AND type = 'individual' AND status = 'confirmed'"
+);
 const studentActiveBookings = db.prepare(
   "SELECT group_id, date FROM bookings WHERE student_id = ? AND status = 'confirmed' AND type = 'group'"
 );
@@ -371,6 +378,66 @@ function eligible(student, cell) {
   if (!(cell.level_min <= student.level && student.level <= cell.level_max)) return false;
   if (!(cell.gender === 'mixed' || cell.gender === student.gender)) return false;
   return true;
+}
+
+function toMin(hhmm) { const m = /(\d{1,2}):(\d{2})/.exec(String(hhmm || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; }
+function minToHHMM(m) { return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+function subtractIntervals(wf, wt, occupied) {
+  let free = [[wf, wt]];
+  for (const [os, oe] of occupied) {
+    const next = [];
+    for (const [fs, fe] of free) {
+      if (oe <= fs || os >= fe) { next.push([fs, fe]); continue; }
+      if (os > fs) next.push([fs, Math.min(os, fe)]);
+      if (oe < fe) next.push([Math.max(oe, fs), fe]);
+    }
+    free = next;
+  }
+  return free.filter(([a, b]) => b > a);
+}
+function individualSlots(slot, days = 14) {
+  const windows = listAvailability.all(slot);
+  if (!windows.length) return [];
+  const busy = {};
+  coachIndividualBookings.all(slot).forEach(b => {
+    if (!b.datetime || !b.duration_min) return;
+    const date = b.datetime.slice(0, 10);
+    const sm = toMin(b.datetime.slice(11));
+    if (sm == null) return;
+    (busy[date] = busy[date] || []).push([sm, sm + b.duration_min]);
+  });
+  const now = new Date();
+  const out = [];
+  for (let off = 0; off < days; off++) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + off);
+    const wd = d.getDay();
+    const dateIso = isoDate(d);
+    const dayWindows = windows.filter(w => Number(w.day) === wd);
+    if (!dayWindows.length) continue;
+    const occupied = (busy[dateIso] || []).slice().sort((a, b) => a[0] - b[0]);
+    const starts = [];
+    for (const w of dayWindows) {
+      const wf = toMin(w.from_time), wt = toMin(w.to_time);
+      if (wf == null || wt == null) continue;
+      for (const [a, b] of subtractIntervals(wf, wt, occupied)) {
+        if (b - a < 60) continue;
+        for (let s = a; s + 60 <= b; s += 30) {
+          const startDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(s / 60), s % 60, 0, 0);
+          if (startDate <= now) continue;
+          const durations = [];
+          for (let dur = 60; s + dur <= b; dur += 30) durations.push(dur);
+          if (durations.length) starts.push({ time: minToHHMM(s), datetime: dateIso + ' ' + minToHHMM(s), durations });
+        }
+      }
+    }
+    if (starts.length) { starts.sort((x, y) => toMin(x.time) - toMin(y.time)); out.push({ date: dateIso, starts }); }
+  }
+  return out;
+}
+async function notifyIndividualCreated(name, slot, datetime, duration) {
+  const chat = coachChatIdForGroup(slot);
+  if (!chat) return;
+  await tgApi('sendMessage', { chat_id: chat, text: `🆕 Индивидуальная запись\n👤 ${name}\n📅 ${datetime}\n⏱ ${duration} мин` });
 }
 
 // ── Booking notifications (Фаза 2C) ───────────────────────────────────────────
