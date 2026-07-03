@@ -29,6 +29,15 @@
     .bk.booked { color:#FFB347; }
     .cancel { padding:8px 14px; border:1px solid var(--border); border-radius:10px; background:transparent; color:#ff6b6b; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
     .cancel:active { transform:scale(0.96); }
+    .tabs { display:flex; gap:8px; margin:12px 0 18px; }
+    .tab { flex:1; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--surface); color:var(--muted); font-weight:700; font-size:13px; cursor:pointer; }
+    .tab.active { background:var(--accent); border-color:var(--accent); color:#0a0a0a; }
+    .cbtn { width:100%; padding:14px 16px; border:1px solid var(--border); border-radius:14px; background:var(--surface); color:var(--text); font-size:15px; font-weight:700; text-align:left; cursor:pointer; margin-bottom:10px; }
+    .start { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:1px solid var(--border); border-radius:12px; margin-bottom:8px; cursor:pointer; }
+    .start.open { border-color:var(--accent); }
+    .chips { display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 12px; }
+    .chip { padding:8px 14px; border:1px solid var(--accent); border-radius:999px; background:transparent; color:var(--accent); font-weight:700; font-size:13px; cursor:pointer; }
+    .chip:active { transform:scale(0.96); }
   </style>
 </head>
 <body>
@@ -44,106 +53,148 @@
     const errEl = document.getElementById('err');
     const esc = s => String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
     const initData = tg ? tg.initData : '';
-    let student = null;
+    let student = null, tab = 'group', curSlot = null;
 
-    async function api(path, body) {
-      const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.assign({ initData }, body)) });
-      if (r.status === 401) return { _http: 401 };
+    async function api(path, body){
+      const r = await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({initData},body))});
+      if (r.status===401) return {_http:401};
       return await r.json();
     }
+    const flash = m => { errEl.textContent=m; setTimeout(()=>errEl.textContent='',2600); };
+    const body = () => document.getElementById('tabBody');
 
-    async function identify() {
-      const data = await api('/api/app/identify', {});
-      if (data._http === 401) { root.innerHTML = '<div class="card">Не удалось подтвердить вход. Откройте приложение из бота.</div>'; return; }
-      if (data.status === 'need_phone') return renderNeedPhone();
-      if (data.status === 'unmatched') return renderUnmatched(data.manager);
-      if (data.status === 'ok') return renderStudents(data.students);
-      root.innerHTML = '<div class="card">Неизвестный ответ сервера.</div>';
+    async function identify(){
+      const data = await api('/api/app/identify',{});
+      if (data._http===401){ root.innerHTML='<div class="card">Не удалось подтвердить вход. Откройте приложение из бота.</div>'; return; }
+      if (data.status==='need_phone') return renderNeedPhone();
+      if (data.status==='unmatched') return renderUnmatched(data.manager);
+      if (data.status==='ok') return renderStudents(data.students);
+      root.innerHTML='<div class="card">Неизвестный ответ сервера.</div>';
+    }
+    function renderNeedPhone(){
+      root.innerHTML='<div class="card"><div class="muted" style="margin-bottom:14px">Поделитесь номером телефона — по нему мы найдём вас в базе академии.</div><button id="share">📱 Поделиться телефоном</button></div>';
+      document.getElementById('share').onclick=()=>{ if(tg&&tg.requestContact) tg.requestContact(()=>setTimeout(identify,800)); else flash('Откройте приложение из Telegram-бота.'); };
+    }
+    function renderUnmatched(manager){
+      const u = manager?('https://t.me/'+manager):'#';
+      root.innerHTML='<div class="card"><h1 style="font-size:18px">Вы ещё у нас не занимались</h1><div class="muted" style="margin:8px 0 16px">Напишите менеджеру — он подберёт группу и оформит вас.</div><a class="mgr" href="'+u+'">Написать менеджеру</a></div>';
+    }
+    function renderStudents(students){
+      if(!students||!students.length){ root.innerHTML='<div class="card">Профиль не найден.</div>'; return; }
+      if(students.length===1){ chooseStudent(students[0]); return; }
+      root.innerHTML='<div class="card"><h1 style="font-size:18px">Кого записываем?</h1>'+students.map(s=>'<div class="stud" data-id="'+s.id+'" style="cursor:pointer"><div><strong>'+esc(s.name)+'</strong></div>'+(s.level!=null?'<div class="lv">'+s.level+'</div>':'')+'</div>').join('')+'</div>';
+      root.querySelectorAll('.stud').forEach(el=>el.onclick=()=>chooseStudent(students.find(s=>s.id===Number(el.dataset.id))));
+    }
+    function chooseStudent(s){ student=s; tab='group'; renderShell(); }
+    function renderShell(){
+      root.innerHTML='<div class="muted" style="margin-bottom:2px">Ученик: <strong style="color:var(--text)">'+esc(student.name)+'</strong></div>'
+        +'<div class="tabs"><button class="tab" data-t="group">Групповые</button><button class="tab" data-t="ind">Индивидуально</button><button class="tab" data-t="my">Мои записи</button></div>'
+        +'<div id="tabBody"></div>';
+      root.querySelectorAll('.tab').forEach(b=>b.onclick=()=>selectTab(b.dataset.t));
+      selectTab(tab);
+    }
+    function selectTab(t){
+      tab=t;
+      root.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.t===t));
+      body().innerHTML='<div class="card">Загрузка…</div>';
+      if(t==='group') loadLessons();
+      else if(t==='ind') loadCoaches();
+      else loadMyBookings();
     }
 
-    function renderNeedPhone() {
-      root.innerHTML = '<div class="card"><div class="muted" style="margin-bottom:14px">Поделитесь номером телефона — по нему мы найдём вас в базе академии.</div><button id="share">📱 Поделиться телефоном</button></div>';
-      document.getElementById('share').onclick = () => {
-        if (tg && tg.requestContact) tg.requestContact(() => setTimeout(identify, 800));
-        else errEl.textContent = 'Откройте приложение из Telegram-бота.';
-      };
-    }
-    function renderUnmatched(manager) {
-      const u = manager ? ('https://t.me/' + manager) : '#';
-      root.innerHTML = '<div class="card"><h1 style="font-size:18px">Вы ещё у нас не занимались</h1><div class="muted" style="margin:8px 0 16px">Напишите менеджеру — он подберёт группу и оформит вас.</div><a class="mgr" href="'+u+'">Написать менеджеру</a></div>';
-    }
-    function renderStudents(students) {
-      if (!students || !students.length) { root.innerHTML = '<div class="card">Профиль не найден.</div>'; return; }
-      if (students.length === 1) { student = students[0]; return loadLessons(); }
-      root.innerHTML = '<div class="card"><h1 style="font-size:18px">Кого записываем?</h1>' +
-        students.map(s => '<div class="stud" data-id="'+s.id+'" style="cursor:pointer"><div><strong>'+esc(s.name)+'</strong></div>'+(s.level!=null?'<div class="lv">'+s.level+'</div>':'')+'</div>').join('') + '</div>';
-      root.querySelectorAll('.stud').forEach(el => el.onclick = () => { student = students.find(s => s.id === Number(el.dataset.id)); loadLessons(); });
-    }
-
-    async function loadLessons() {
-      root.innerHTML = '<div class="card">Загрузка занятий…</div>';
-      const data = await api('/api/app/lessons', { student_id: student.id });
-      if (data.status !== 'ok') { root.innerHTML = '<div class="card">Не удалось загрузить занятия.</div>'; return; }
+    /* ---- групповые ---- */
+    async function loadLessons(){
+      const data = await api('/api/app/lessons',{student_id:student.id});
+      if(data.status!=='ok'){ body().innerHTML='<div class="card">Не удалось загрузить занятия.</div>'; return; }
       renderLessons(data.lessons);
     }
-
-    const DOW = ['вс','пн','вт','ср','чт','пт','сб'];
-    function fmtDate(iso) {
-      const [y,m,d] = iso.split('-').map(Number);
-      const dt = new Date(y, m-1, d);
-      return d + '.' + String(m).padStart(2,'0') + ' · ' + DOW[dt.getDay()];
-    }
-    function renderLessons(lessons) {
-      let html = '<div class="muted" style="margin-bottom:6px">Ученик: <strong style="color:var(--text)">'+esc(student.name)+'</strong></div>';
-      if (!lessons.length) { root.innerHTML = html + '<div class="card">Нет подходящих занятий. Уточните уровень/группу у тренера.</div>'; return; }
-      let curDate = null;
-      lessons.forEach(l => {
-        if (l.date !== curDate) { curDate = l.date; html += '<div class="mday">'+fmtDate(l.date)+'</div>'; }
-        const startMs = lessonStartMs(l.date, l.time);
-        const cancelable = l.booked && (startMs - Date.now() >= 8*3600*1000);
-        const badge = l.booked
-            ? (cancelable ? '<button class="cancel" data-cg="'+esc(l.group_id)+'" data-cd="'+l.date+'">Отменить</button>'
-                          : '<span class="bk booked">вы записаны</span>')
-          : l.status === 'open' ? '<span class="bk free">свободно '+l.free+'/'+l.capacity+'</span>'
-          : l.status === 'overbooked' ? '<span class="bk none">перебор</span>'
-          : '<span class="bk none">мест нет</span>';
-        const clickable = (!l.booked && l.status === 'open');
-        html += '<div class="lesson'+(clickable?' clickable':'')+'"'+(clickable?' data-g="'+esc(l.group_id)+'" data-d="'+l.date+'"':'')+'>'
-          + '<div><strong>'+esc(l.title)+'</strong><div class="muted">'+esc(l.time)+(l.coach_name?' · '+esc(l.coach_name):'')+(l.booked&&!cancelable?' · отмена через тренера':'')+'</div></div>'
-          + badge + '</div>';
+    const DOW=['вс','пн','вт','ср','чт','пт','сб'];
+    function fmtDate(iso){ const [y,m,d]=iso.split('-').map(Number); const dt=new Date(y,m-1,d); return d+'.'+String(m).padStart(2,'0')+' · '+DOW[dt.getDay()]; }
+    function lessonStartMs(iso,time){ const [y,m,d]=iso.split('-').map(Number); const mm=/(\d{1,2}):(\d{2})/.exec(String(time||'')); return new Date(y,m-1,d,mm?+mm[1]:0,mm?+mm[2]:0,0,0).getTime(); }
+    function renderLessons(lessons){
+      if(!lessons.length){ body().innerHTML='<div class="card">Нет подходящих занятий. Уточните уровень/группу у тренера.</div>'; return; }
+      let html='',cur=null;
+      lessons.forEach(l=>{
+        if(l.date!==cur){ cur=l.date; html+='<div class="mday">'+fmtDate(l.date)+'</div>'; }
+        const badge = l.booked?'<span class="bk booked">вы записаны</span>'
+          : l.status==='open'?'<span class="bk free">свободно '+l.free+'/'+l.capacity+'</span>'
+          : l.status==='overbooked'?'<span class="bk none">перебор</span>':'<span class="bk none">мест нет</span>';
+        const clickable=(!l.booked&&l.status==='open');
+        html+='<div class="lesson'+(clickable?' clickable':'')+'"'+(clickable?' data-g="'+esc(l.group_id)+'" data-d="'+l.date+'"':'')+'>'
+          +'<div><strong>'+esc(l.title)+'</strong><div class="muted">'+esc(l.time)+(l.coach_name?' · '+esc(l.coach_name):'')+'</div></div>'+badge+'</div>';
       });
-      root.innerHTML = html;
-      root.querySelectorAll('.lesson.clickable').forEach(el => el.onclick = () => book(el.dataset.g, el.dataset.d, el));
-      root.querySelectorAll('.cancel').forEach(el => el.onclick = (e) => { e.stopPropagation(); cancelBooking(el.dataset.cg, el.dataset.cd, el); });
+      body().innerHTML=html;
+      body().querySelectorAll('.lesson.clickable').forEach(el=>el.onclick=()=>bookGroup(el.dataset.g,el.dataset.d,el));
     }
-    function lessonStartMs(iso, time) {
-      const [y,m,d] = iso.split('-').map(Number);
-      const mm = /(\d{1,2}):(\d{2})/.exec(String(time||''));
-      const dt = new Date(y, m-1, d, mm?+mm[1]:0, mm?+mm[2]:0, 0, 0);
-      return dt.getTime();
-    }
-    async function cancelBooking(group_id, date, el) {
-      if (el) el.style.opacity = '0.5';
-      const data = await api('/api/app/cancel', { student_id: student.id, group_id, date });
-      if (data.ok) { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); loadLessons(); return; }
-      const msg = data.error === 'too_late' ? 'Отменить можно не позднее 8 часов до начала'
-        : data.error === 'not_found' ? '' : 'Ошибка отмены';
-      if (msg) { errEl.textContent = msg; setTimeout(() => errEl.textContent = '', 2500); }
+    async function bookGroup(group_id,date,el){
+      el.style.opacity='0.5';
+      const data=await api('/api/app/book',{student_id:student.id,group_id,date});
+      if(data.ok){ if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success'); loadLessons(); return; }
+      flash(data.error==='full'?'Мест нет':data.error==='duplicate'?'Вы уже записаны':data.error==='ineligible'?'Группа вам не подходит':data.error==='expired'?'Занятие уже прошло':'Ошибка');
       loadLessons();
     }
 
-    async function book(group_id, date, el) {
-      el.style.opacity = '0.5';
-      const data = await api('/api/app/book', { student_id: student.id, group_id, date });
-      if (data.ok) { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); loadLessons(); return; }
-      const msg = data.error === 'full' ? 'Мест нет' : data.error === 'duplicate' ? 'Вы уже записаны'
-        : data.error === 'ineligible' ? 'Группа вам не подходит' : data.error === 'expired' ? 'Занятие уже прошло' : 'Ошибка';
-      errEl.textContent = msg; el.style.opacity = '';
-      setTimeout(() => errEl.textContent = '', 2500);
-      if (data.error === 'full' || data.error === 'duplicate') loadLessons();
+    /* ---- индивидуально ---- */
+    async function loadCoaches(){
+      curSlot=null;
+      const data=await api('/api/app/coaches',{student_id:student.id});
+      if(data.status!=='ok'){ body().innerHTML='<div class="card">Не удалось загрузить тренеров.</div>'; return; }
+      body().innerHTML='<div class="muted" style="margin-bottom:10px">Выберите тренера:</div>'+data.coaches.map(c=>'<button class="cbtn" data-s="'+esc(c.slot)+'">'+esc(c.name||c.slot)+'</button>').join('');
+      body().querySelectorAll('.cbtn').forEach(b=>b.onclick=()=>loadSlots(b.dataset.s));
+    }
+    async function loadSlots(slot){
+      curSlot=slot;
+      body().innerHTML='<div class="card">Загрузка слотов…</div>';
+      const data=await api('/api/app/slots',{student_id:student.id,slot});
+      if(data.status!=='ok'){ body().innerHTML='<div class="card">Не удалось загрузить время.</div>'; return; }
+      renderSlots(data.dates);
+    }
+    function renderSlots(dates){
+      let html='<button class="cbtn" onclick="loadCoaches()" style="margin-bottom:14px">← Другой тренер</button>';
+      if(!dates.length){ body().innerHTML=html+'<div class="card">У тренера нет свободного времени.</div>'; return; }
+      dates.forEach(dt=>{
+        html+='<div class="mday">'+fmtDate(dt.date)+'</div>';
+        dt.starts.forEach(s=>{
+          html+='<div class="start" data-dt="'+esc(s.datetime)+'"><strong>'+esc(s.time)+'</strong><span class="muted">выбрать →</span></div>'
+            +'<div class="chips" data-for="'+esc(s.datetime)+'" style="display:none">'+s.durations.map(d=>'<button class="chip" data-dt="'+esc(s.datetime)+'" data-dur="'+d+'">'+(d/60)+' ч'+(d%60?' 30м':'')+'</button>').join('')+'</div>';
+        });
+      });
+      body().innerHTML=html;
+      body().querySelectorAll('.start').forEach(el=>el.onclick=()=>{
+        const ch=body().querySelector('.chips[data-for="'+CSS.escape(el.dataset.dt)+'"]');
+        const open=ch.style.display!=='none';
+        body().querySelectorAll('.chips').forEach(c=>c.style.display='none');
+        body().querySelectorAll('.start').forEach(s=>s.classList.remove('open'));
+        if(!open){ ch.style.display='flex'; el.classList.add('open'); }
+      });
+      body().querySelectorAll('.chip').forEach(el=>el.onclick=()=>bookIndividual(el.dataset.dt,Number(el.dataset.dur),el));
+    }
+    async function bookIndividual(datetime,duration_min,el){
+      el.style.opacity='0.5';
+      const data=await api('/api/app/book-individual',{student_id:student.id,slot:curSlot,datetime,duration_min});
+      if(data.ok){ if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success'); flash('Записаны!'); loadSlots(curSlot); return; }
+      flash(data.error==='taken'?'Время уже занято':data.error==='invalid'?'Некорректный слот':data.error==='expired'?'Слот уже прошёл':'Ошибка');
+      loadSlots(curSlot);
     }
 
-    identify().catch(() => { errEl.textContent = 'Ошибка сети'; });
+    /* ---- мои записи ---- */
+    async function loadMyBookings(){
+      const data=await api('/api/app/my-bookings',{student_id:student.id});
+      if(data.status!=='ok'){ body().innerHTML='<div class="card">Не удалось загрузить записи.</div>'; return; }
+      if(!data.bookings.length){ body().innerHTML='<div class="card">У вас нет предстоящих записей.</div>'; return; }
+      body().innerHTML=data.bookings.map(b=>'<div class="lesson"><div><strong>'+esc(b.title)+'</strong><div class="muted">'+esc(b.when)+(b.coach_name?' · '+esc(b.coach_name):'')+'</div></div>'
+        +(b.cancelable?'<button class="cancel" data-b="'+b.booking_id+'">Отменить</button>':'<span class="bk none">отмена через тренера</span>')+'</div>').join('');
+      body().querySelectorAll('.cancel').forEach(el=>el.onclick=()=>cancelMine(Number(el.dataset.b),el));
+    }
+    async function cancelMine(booking_id,el){
+      el.style.opacity='0.5';
+      const data=await api('/api/app/cancel',{student_id:student.id,booking_id});
+      if(data.ok){ if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success'); loadMyBookings(); return; }
+      flash(data.error==='too_late'?'Отменить можно не позднее 8 часов до начала':data.error==='forbidden'?'Нет доступа':'Ошибка');
+      loadMyBookings();
+    }
+
+    identify().catch(()=>flash('Ошибка сети'));
   </script>
 </body>
 </html>
