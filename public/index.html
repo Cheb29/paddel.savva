@@ -572,62 +572,73 @@
     .about-visual {
       position: relative;
       aspect-ratio: 4/5;
-      background: var(--surface);
-      overflow: hidden;
     }
     .about-visual-inner {
       width: 100%; height: 100%;
+      border-radius: 28px;
+      border: 1px solid var(--border);
+      overflow: hidden;
       background:
-        linear-gradient(135deg, oklch(72% 0.22 145 / 0.1) 0%, transparent 60%),
-        var(--surface);
+        radial-gradient(circle at 80% 12%, rgba(86,211,123,0.18), transparent 44%),
+        radial-gradient(circle at 12% 94%, rgba(255,179,71,0.06), transparent 40%),
+        linear-gradient(160deg, #171717 0%, #0d0d0d 100%);
+      box-shadow: 0 30px 70px -24px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05);
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 48px 40px;
       position: relative;
     }
-    .court-lines {
-      position: absolute;
-      inset: 32px;
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-    .court-lines::before {
-      content: '';
-      position: absolute;
-      left: 50%;
-      top: 0; bottom: 0;
-      width: 1px;
-      background: rgba(255,255,255,0.06);
-    }
-    .court-lines::after {
-      content: '';
-      position: absolute;
-      top: 40%;
-      left: 0; right: 0;
-      height: 1px;
-      background: rgba(255,255,255,0.06);
-    }
-    .court-center {
-      width: 80px; height: 80px;
-      border-radius: 50%;
-      border: 1px solid oklch(72% 0.22 145 / 0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .court-logo-big {
+    .about-wordmark {
       font-family: var(--font-head);
-      font-size: 48px;
+      font-size: clamp(52px, 7vw, 92px);
+      line-height: 0.88;
+      letter-spacing: 0.02em;
+      color: var(--text);
+      text-wrap: balance;
+    }
+    .about-wordmark span { color: var(--accent); }
+    .about-tagline {
+      margin-top: 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .about-stats-panel {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+    }
+    .about-stat-num {
+      font-family: var(--font-head);
+      font-size: clamp(32px, 4vw, 42px);
+      line-height: 1;
       color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .about-stat-label {
+      margin-top: 7px;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.3;
     }
     .about-badge {
       position: absolute;
-      top: 24px; right: -16px;
+      top: 26px; right: -14px;
       background: var(--accent);
       color: var(--bg);
       padding: 12px 20px;
+      border-radius: 12px;
       font-family: var(--font-head);
       font-size: 20px;
       letter-spacing: 0.05em;
+      box-shadow: 0 10px 24px -6px rgba(86,211,123,0.5);
     }
     .about-text p {
       font-size: 16px;
@@ -1759,9 +1770,8 @@
       .about-text p { font-size: 15px; }
       .about-features { margin-top: 28px; }
       .about-feature { padding: 14px 0; }
-      .court-center { width: 60px; height: 60px; }
-      .court-logo-big { font-size: 32px; }
-      .about-badge { right: -8px; font-size: 9px; padding: 8px 14px; }
+      .about-visual-inner { padding: 36px 28px; }
+      .about-badge { right: -8px; font-size: 18px; padding: 10px 16px; }
 
       /* PROGRAMS */
       .programs-grid { grid-template-columns: 1fr; gap: 14px; margin-top: 40px; }
@@ -1963,9 +1973,14 @@ function closeMenu(){
     <div class="about-grid">
       <div class="about-visual reveal-left">
         <div class="about-visual-inner">
-          <div class="court-lines"></div>
-          <div class="court-center">
-            <div class="court-logo-big">S</div>
+          <div>
+            <div class="about-wordmark">SAVVA<span>.</span>TEAM</div>
+            <div class="about-tagline">Академия падел тенниса</div>
+          </div>
+          <div class="about-stats-panel">
+            <div><div class="about-stat-num">200+</div><div class="about-stat-label">учеников</div></div>
+            <div><div class="about-stat-num">10</div><div class="about-stat-label">крытых кортов</div></div>
+            <div><div class="about-stat-num">3</div><div class="about-stat-label">тренера</div></div>
           </div>
         </div>
         <div class="about-badge">С 2024</div>
