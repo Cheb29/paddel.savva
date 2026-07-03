@@ -19,6 +19,14 @@
     .stud .lv { color:var(--accent); font-weight:700; }
     .muted { color:var(--muted); font-size:13px; }
     #err { color:#ff6b6b; font-size:13px; margin-top:10px; }
+    .mday { color:var(--accent); font-weight:800; font-size:13px; letter-spacing:1px; text-transform:uppercase; margin:20px 0 10px; }
+    .lesson { display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:10px; }
+    .lesson.clickable { cursor:pointer; }
+    .lesson.clickable:active { transform:scale(0.98); }
+    .bk { font-size:12px; font-weight:700; white-space:nowrap; }
+    .bk.free { color:var(--accent); }
+    .bk.none { color:var(--muted); }
+    .bk.booked { color:#FFB347; }
   </style>
 </head>
 <body>
@@ -33,43 +41,87 @@
     const root = document.getElementById('root');
     const errEl = document.getElementById('err');
     const esc = s => String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+    const initData = tg ? tg.initData : '';
+    let student = null;
+
+    async function api(path, body) {
+      const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.assign({ initData }, body)) });
+      if (r.status === 401) return { _http: 401 };
+      return await r.json();
+    }
 
     async function identify() {
-      const initData = tg ? tg.initData : '';
-      const r = await fetch('/api/app/identify', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ initData })
+      const data = await api('/api/app/identify', {});
+      if (data._http === 401) { root.innerHTML = '<div class="card">Не удалось подтвердить вход. Откройте приложение из бота.</div>'; return; }
+      if (data.status === 'need_phone') return renderNeedPhone();
+      if (data.status === 'unmatched') return renderUnmatched(data.manager);
+      if (data.status === 'ok') return renderStudents(data.students);
+      root.innerHTML = '<div class="card">Неизвестный ответ сервера.</div>';
+    }
+
+    function renderNeedPhone() {
+      root.innerHTML = '<div class="card"><div class="muted" style="margin-bottom:14px">Поделитесь номером телефона — по нему мы найдём вас в базе академии.</div><button id="share">📱 Поделиться телефоном</button></div>';
+      document.getElementById('share').onclick = () => {
+        if (tg && tg.requestContact) tg.requestContact(() => setTimeout(identify, 800));
+        else errEl.textContent = 'Откройте приложение из Telegram-бота.';
+      };
+    }
+    function renderUnmatched(manager) {
+      const u = manager ? ('https://t.me/' + manager) : '#';
+      root.innerHTML = '<div class="card"><h1 style="font-size:18px">Вы ещё у нас не занимались</h1><div class="muted" style="margin:8px 0 16px">Напишите менеджеру — он подберёт группу и оформит вас.</div><a class="mgr" href="'+u+'">Написать менеджеру</a></div>';
+    }
+    function renderStudents(students) {
+      if (!students || !students.length) { root.innerHTML = '<div class="card">Профиль не найден.</div>'; return; }
+      if (students.length === 1) { student = students[0]; return loadLessons(); }
+      root.innerHTML = '<div class="card"><h1 style="font-size:18px">Кого записываем?</h1>' +
+        students.map(s => '<div class="stud" data-id="'+s.id+'" style="cursor:pointer"><div><strong>'+esc(s.name)+'</strong></div>'+(s.level!=null?'<div class="lv">'+s.level+'</div>':'')+'</div>').join('') + '</div>';
+      root.querySelectorAll('.stud').forEach(el => el.onclick = () => { student = students.find(s => s.id === Number(el.dataset.id)); loadLessons(); });
+    }
+
+    async function loadLessons() {
+      root.innerHTML = '<div class="card">Загрузка занятий…</div>';
+      const data = await api('/api/app/lessons', { student_id: student.id });
+      if (data.status !== 'ok') { root.innerHTML = '<div class="card">Не удалось загрузить занятия.</div>'; return; }
+      renderLessons(data.lessons);
+    }
+
+    const DOW = ['вс','пн','вт','ср','чт','пт','сб'];
+    function fmtDate(iso) {
+      const [y,m,d] = iso.split('-').map(Number);
+      const dt = new Date(y, m-1, d);
+      return d + '.' + String(m).padStart(2,'0') + ' · ' + DOW[dt.getDay()];
+    }
+    function renderLessons(lessons) {
+      let html = '<div class="muted" style="margin-bottom:6px">Ученик: <strong style="color:var(--text)">'+esc(student.name)+'</strong></div>';
+      if (!lessons.length) { root.innerHTML = html + '<div class="card">Нет подходящих занятий. Уточните уровень/группу у тренера.</div>'; return; }
+      let curDate = null;
+      lessons.forEach(l => {
+        if (l.date !== curDate) { curDate = l.date; html += '<div class="mday">'+fmtDate(l.date)+'</div>'; }
+        const badge = l.booked ? '<span class="bk booked">вы записаны</span>'
+          : l.status === 'open' ? '<span class="bk free">свободно '+l.free+'/'+l.capacity+'</span>'
+          : l.status === 'overbooked' ? '<span class="bk none">перебор</span>'
+          : '<span class="bk none">мест нет</span>';
+        const clickable = (!l.booked && l.status === 'open');
+        html += '<div class="lesson'+(clickable?' clickable':'')+'"'+(clickable?' data-g="'+esc(l.group_id)+'" data-d="'+l.date+'"':'')+'>'
+          + '<div><strong>'+esc(l.title)+'</strong><div class="muted">'+esc(l.time)+(l.coach_name?' · '+esc(l.coach_name):'')+'</div></div>'
+          + badge + '</div>';
       });
-      if (r.status === 401) { root.innerHTML = '<div class="card">Не удалось подтвердить вход. Откройте приложение из бота.</div>'; return; }
-      const data = await r.json();
-      render(data);
+      root.innerHTML = html;
+      root.querySelectorAll('.lesson.clickable').forEach(el => el.onclick = () => book(el.dataset.g, el.dataset.d, el));
     }
 
-    function render(data) {
-      if (data.status === 'need_phone') {
-        root.innerHTML = '<div class="card"><div class="muted" style="margin-bottom:14px">Поделитесь номером телефона — по нему мы найдём вас в базе академии.</div><button id="share">📱 Поделиться телефоном</button></div>';
-        document.getElementById('share').onclick = () => {
-          if (tg && tg.requestContact) {
-            tg.requestContact(() => setTimeout(identify, 800));
-          } else {
-            errEl.textContent = 'Откройте приложение из Telegram-бота.';
-          }
-        };
-      } else if (data.status === 'unmatched') {
-        const u = data.manager ? ('https://t.me/' + data.manager) : '#';
-        root.innerHTML = '<div class="card"><h1 style="font-size:18px">Вы ещё у нас не занимались</h1><div class="muted" style="margin:8px 0 16px">Напишите менеджеру — он подберёт группу и оформит вас.</div><a class="mgr" href="'+u+'">Написать менеджеру</a></div>';
-      } else if (data.status === 'ok') {
-        const list = (data.students||[]).map(s =>
-          '<div class="stud"><div><strong>'+esc(s.name)+'</strong>'+(s.audience?'<div class="muted">'+(s.audience==='kids'?'ребёнок':'взрослый')+'</div>':'')+'</div>'+(s.level!=null?'<div class="lv">'+s.level+'</div>':'')+'</div>'
-        ).join('');
-        const title = data.students.length>1 ? 'Кого записываем?' : 'С возвращением!';
-        root.innerHTML = '<div class="card"><h1 style="font-size:18px">'+title+'</h1>'+list+'<div class="muted" style="margin-top:12px">Скоро здесь появится выбор занятий и запись.</div></div>';
-      } else {
-        root.innerHTML = '<div class="card">Неизвестный ответ сервера.</div>';
-      }
+    async function book(group_id, date, el) {
+      el.style.opacity = '0.5';
+      const data = await api('/api/app/book', { student_id: student.id, group_id, date });
+      if (data.ok) { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); loadLessons(); return; }
+      const msg = data.error === 'full' ? 'Мест нет' : data.error === 'duplicate' ? 'Вы уже записаны'
+        : data.error === 'ineligible' ? 'Группа вам не подходит' : data.error === 'expired' ? 'Занятие уже прошло' : 'Ошибка';
+      errEl.textContent = msg; el.style.opacity = '';
+      setTimeout(() => errEl.textContent = '', 2500);
+      if (data.error === 'full' || data.error === 'duplicate') loadLessons();
     }
 
-    identify().catch(e => { errEl.textContent = 'Ошибка сети'; });
+    identify().catch(() => { errEl.textContent = 'Ошибка сети'; });
   </script>
 </body>
 </html>
