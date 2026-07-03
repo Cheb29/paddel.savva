@@ -429,6 +429,79 @@ app.post('/api/upload', requireSecret, (req, res) => {
   });
 });
 
+// ── Students CRUD (Фаза 1) ────────────────────────────────────────────────────
+// Валидация полей ученика. partial=true → проверяем только присутствующие ключи.
+function validateStudentPatch(body, { partial }) {
+  const out = {};
+  const has = k => Object.prototype.hasOwnProperty.call(body, k);
+  if (!partial || has('name')) {
+    const name = String(body.name ?? '').trim();
+    if (!name) return { error: 'Имя обязательно' };
+    out.name = name;
+  }
+  if (!partial || has('phone')) {
+    const phone = String(body.phone ?? '').trim();
+    if (!phone) return { error: 'Телефон обязателен' };
+    out.phone = phone;
+  }
+  if (has('level')) {
+    if (body.level === null || body.level === '') out.level = null;
+    else {
+      const lv = Number(body.level);
+      if (!Number.isFinite(lv) || lv < 1 || lv > 7) return { error: 'Уровень должен быть 1.0–7.0' };
+      out.level = lv;
+    }
+  }
+  if (has('audience')) {
+    const a = body.audience;
+    if (a === null || a === '') out.audience = null;
+    else if (a === 'adult' || a === 'kids') out.audience = a;
+    else return { error: 'audience: adult|kids' };
+  }
+  if (has('gender')) {
+    const g = body.gender;
+    if (g === null || g === '') out.gender = null;
+    else if (g === 'm' || g === 'f') out.gender = g;
+    else return { error: 'gender: m|f' };
+  }
+  if (has('confirmed')) {
+    out.confirmed = (body.confirmed === true || body.confirmed === 1 || body.confirmed === '1') ? 1 : 0;
+  }
+  return { values: out };
+}
+
+app.get('/api/students', requireSecret, (_req, res) => {
+  res.json(listStudents.all());
+});
+
+app.post('/api/students', requireSecret, (req, res) => {
+  const { error, values } = validateStudentPatch(req.body ?? {}, { partial: false });
+  if (error) return res.status(400).json({ error });
+  const row = insertStudent.run({
+    name: values.name, phone: values.phone,
+    level: values.level ?? null, audience: values.audience ?? null,
+    gender: values.gender ?? null, confirmed: values.confirmed ?? 0, source: 'manual',
+  });
+  res.json({ id: row.lastInsertRowid });
+});
+
+app.patch('/api/students/:id', requireSecret, (req, res) => {
+  const id = Number(req.params.id);
+  if (!getStudent.get(id)) return res.status(404).json({ error: 'Не найдено' });
+  const { error, values } = validateStudentPatch(req.body ?? {}, { partial: true });
+  if (error) return res.status(400).json({ error });
+  const keys = Object.keys(values);
+  if (!keys.length) return res.json({ ok: true });
+  const setSql = keys.map(k => `${k} = @${k}`).join(', ');
+  db.prepare(`UPDATE students SET ${setSql} WHERE id = @id`).run({ ...values, id });
+  res.json({ ok: true });
+});
+
+app.delete('/api/students/:id', requireSecret, (req, res) => {
+  deleteStudentStmt.run(Number(req.params.id));
+  res.json({ ok: true });
+});
+
 // ── GET /admin ─────────────────────────────────────────────────────────────────
 app.get('/admin', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
