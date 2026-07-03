@@ -39,7 +39,7 @@
 - Consumes: `db`, `tgApi`, `normPhone`, `scheduleData`, `coachNameBySlot`, `occStart`, `groupOccurrences`, `eligible`, `countConfirmedStmt`, `activeBookingExists`.
 - Produces: колонки `bookings.title/time/coach_id`(снапшот); `cellById(group_id)`; `coachChatIdForGroup(coachId)`; `clientChatIdsForStudent(student)`; `notifyBookingCreated(name, occ)`; `notifyTrainerCancelled(name, booking)`; `notifyClientCancelled(student, booking)`; statements `getActiveBooking`, `cancelBookingById`, `getBookingById`.
 
-- [ ] **Шаг 1: Миграция колонок снапшота + новые statements**
+- [x] **Шаг 1: Миграция колонок снапшота + новые statements**
 
 В `server.js` заменить блок `insertGroupBooking` (строки 304-306) на:
 ```js
@@ -56,7 +56,7 @@ const getBookingById = db.prepare("SELECT * FROM bookings WHERE id = ?");
 ```
 (колонка `coach_id` уже есть в таблице с 2B.)
 
-- [ ] **Шаг 2: Добавить `cellById` и хелперы уведомлений**
+- [x] **Шаг 2: Добавить `cellById` и хелперы уведомлений**
 
 В `server.js` сразу после функции `eligible` (после её `}`) вставить:
 ```js
@@ -101,7 +101,7 @@ async function notifyClientCancelled(student, booking) {
 }
 ```
 
-- [ ] **Шаг 3: Снапшот при брони + хук уведомления в `/api/app/book`**
+- [x] **Шаг 3: Снапшот при брони + хук уведомления в `/api/app/book`**
 
 В `server.js` в роуте `/api/app/book` заменить строку
 ```js
@@ -121,7 +121,7 @@ async function notifyClientCancelled(student, booking) {
     res.json({ ok: true, free: Math.max(0, freeLeft) });
 ```
 
-- [ ] **Шаг 4: Проверить миграцию, снапшот и путь уведомления (dev)**
+- [x] **Шаг 4: Проверить миграцию, снапшот и путь уведомления (dev)**
 
 Run:
 ```bash
@@ -135,7 +135,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `bookings cols` содержит `title` и `time`; snapshot брони с непустыми `title/time/coach_id` (уведомление тренеру не падает — токен фейковый, `tgApi` глотает ошибку).
 
-- [ ] **Шаг 5: Commit**
+- [x] **Шаг 5: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(2c): booking snapshot (title/time/coach_id) + notification helpers + notify trainer on booking"
 ```
@@ -151,7 +151,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2c): booking snap
 - Consumes: `resolveAppStudent`, `getActiveBooking`, `cellById`, `occStart`, `cancelBookingById`, `notifyTrainerCancelled`.
 - Produces: роут `POST /api/app/cancel`.
 
-- [ ] **Шаг 1: Добавить роут**
+- [x] **Шаг 1: Добавить роут**
 
 В `server.js` сразу после роута `POST /api/app/book` (после его `});`) вставить:
 ```js
@@ -175,7 +175,7 @@ app.post('/api/app/cancel', (req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Проверить самоотмену: ok (место освобождается) / too_late / not_found**
+- [x] **Шаг 2: Проверить самоотмену: ok (место освобождается) / too_late / not_found**
 
 Run:
 ```bash
@@ -199,7 +199,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `cancel ok -> {"ok":true}`; `free before == after cancel` (место освободилось); повтор → `not_found`; для сегодняшнего занятия — `too_late`, если до его начала <8ч (если сегодняшнее занятие уже >8ч впереди — вернёт `ok`; тогда проверка окна валидна на будущих датах и это не ошибка).
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(2c): POST /api/app/cancel — self-cancel with 8h window, frees slot, notifies trainer"
 ```
@@ -215,7 +215,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2c): POST /api/ap
 - Consumes: `requireSecret`, `db`, `cellById`, `coachNameBySlot`, `occStart`, `getBookingById`, `cancelBookingById`, `getStudent`, `notifyClientCancelled`.
 - Produces: роуты `GET /api/bookings`, `PATCH /api/bookings/:id/cancel`.
 
-- [ ] **Шаг 1: Добавить роуты**
+- [x] **Шаг 1: Добавить роуты**
 
 В `server.js` сразу после роута `POST /api/app/cancel` вставить:
 ```js
@@ -254,7 +254,7 @@ app.patch('/api/bookings/:id/cancel', requireSecret, (req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Проверить admin bookings API**
+- [x] **Шаг 2: Проверить admin bookings API**
 
 Run:
 ```bash
@@ -271,7 +271,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: future содержит запись «Админ Бук» с `title/time/coach_name`; admin cancel `200`, идемпотентно; после отмены — нет в `future`, в `all` статус `cancelled`.
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(2c): admin GET /api/bookings + PATCH /api/bookings/:id/cancel (notify client)"
 ```
@@ -286,7 +286,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2c): admin GET /a
 **Interfaces:**
 - Consumes: `POST /api/app/cancel`, `api()`, `student`, `loadLessons`.
 
-- [ ] **Шаг 1: Показать кнопку отмены у забронированных занятий ≥8ч**
+- [x] **Шаг 1: Показать кнопку отмены у забронированных занятий ≥8ч**
 
 В `public/app.html` в функции `renderLessons` заменить строку формирования `badge` и блок карточки. Найти:
 ```js
@@ -315,7 +315,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2c): admin GET /a
           + badge + '</div>';
 ```
 
-- [ ] **Шаг 2: Добавить `lessonStartMs`, привязку и `cancelBooking`**
+- [x] **Шаг 2: Добавить `lessonStartMs`, привязку и `cancelBooking`**
 
 В `public/app.html` в функции `renderLessons`, после строки `root.querySelectorAll('.lesson.clickable').forEach(el => el.onclick = () => book(el.dataset.g, el.dataset.d, el));` добавить:
 ```js
@@ -340,7 +340,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2c): admin GET /a
     }
 ```
 
-- [ ] **Шаг 3: Добавить стиль кнопки отмены**
+- [x] **Шаг 3: Добавить стиль кнопки отмены**
 
 В `public/app.html` внутри `<style>` перед `</style>` добавить:
 ```css
@@ -348,7 +348,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2c): admin GET /a
     .cancel:active { transform:scale(0.96); }
 ```
 
-- [ ] **Шаг 4: Проверить страницу и парсинг**
+- [x] **Шаг 4: Проверить страницу и парсинг**
 
 Run:
 ```bash
@@ -360,7 +360,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `/app -> 200`; `script parses OK`; grep `>=2`.
 
-- [ ] **Шаг 5: Commit**
+- [x] **Шаг 5: Commit**
 ```bash
 cd /root/savvateam && git add public/app.html && git commit -m "feat(2c): Mini App cancel button for bookings with 8h window"
 ```
@@ -376,21 +376,21 @@ cd /root/savvateam && git add public/app.html && git commit -m "feat(2c): Mini A
 - Consumes: `GET /api/bookings`, `PATCH /api/bookings/:id/cancel`, `adminSecret`, `escapeHtml`, `toast`.
 - Produces: `renderBookings(c)`, `cancelBookingAdmin(id)`; страница `bookings`.
 
-- [ ] **Шаг 1: Пункт меню**
+- [x] **Шаг 1: Пункт меню**
 
 После строки 227 (`<button class="nav-item" data-page="schedule">…Расписание</button>`) вставить:
 ```html
     <button class="nav-item" data-page="bookings"><span class="icon">✔</span>Записи</button>
 ```
 
-- [ ] **Шаг 2: Регистрация в `navigate()`**
+- [x] **Шаг 2: Регистрация в `navigate()`**
 
 В объекте-роутере (строка 442) добавить `bookings:renderBookings,` (например, после `schedule:renderSchedule,`):
 ```js
   ({dashboard:renderDashboard,inbox:renderInbox,students:renderStudents,texts:renderTexts,media:renderMedia,programs:renderPrograms,prices:renderPrices,schedule:renderSchedule,bookings:renderBookings,testimonials:renderTestimonials,coaches:renderCoaches}[page]||renderDashboard)(c);
 ```
 
-- [ ] **Шаг 3: Функции раздела**
+- [x] **Шаг 3: Функции раздела**
 
 Перед строкой 818 (`/* ============= SCHEDULE ============= */`) вставить:
 ```js
@@ -423,7 +423,7 @@ async function cancelBookingAdmin(id){
 }
 ```
 
-- [ ] **Шаг 4: Проверить парсинг админки**
+- [x] **Шаг 4: Проверить парсинг админки**
 
 Run:
 ```bash
@@ -431,7 +431,7 @@ cd /root/savvateam && node -e "const h=require('fs').readFileSync('public/admin.
 ```
 Expected: `admin bookings OK`
 
-- [ ] **Шаг 5: Commit**
+- [x] **Шаг 5: Commit**
 ```bash
 cd /root/savvateam && git add public/admin.html && git commit -m "feat(2c): admin Bookings section (list + trainer cancel)"
 ```
@@ -442,7 +442,7 @@ cd /root/savvateam && git add public/admin.html && git commit -m "feat(2c): admi
 
 **Files:** нет изменений кода — выкладка.
 
-- [ ] **Шаг 1: Выложить сервер и статику**
+- [x] **Шаг 1: Выложить сервер и статику**
 ```bash
 cd /root/savvateam && export SSHPASS='oDR%r1C%rZjm'
 sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no" server.js root@45.139.29.201:/root/savvateam-site/
@@ -450,7 +450,7 @@ sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no" public/app.html public
 echo "rsync done"
 ```
 
-- [ ] **Шаг 2: Перезапустить и проверить миграцию + эндпоинты**
+- [x] **Шаг 2: Перезапустить и проверить миграцию + эндпоинты**
 ```bash
 export SSHPASS='oDR%r1C%rZjm'
 sshpass -e ssh -o StrictHostKeyChecking=no root@45.139.29.201 "cd /root/savvateam-site && pm2 restart savvateam >/dev/null 2>&1 && sleep 1.5 && node -e \"const D=require('better-sqlite3');const db=new D('db/leads.db');const cols=db.prepare('PRAGMA table_info(bookings)').all().map(c=>c.name);console.log('has title/time:', cols.includes('title')&&cols.includes('time'))\"
@@ -461,14 +461,14 @@ echo -n "public /app -> "; curl -s https://savva.n2node.store/app -o /dev/null -
 ```
 Expected: `has title/time: true`; `bookings(secret) 200`; `bookings(no-secret) 401`; `cancel(no-initData) 401`; `/app 200`.
 
-- [ ] **Шаг 3: Живая проверка (ручная, пользователем)**
+- [x] **Шаг 3: Живая проверка (ручная, пользователем)**
 
 Предусловие: у тренера в админке заполнен `telegram_chat_id` (его Telegram user_id); у ученика — level/audience/gender/confirmed.
 - В Mini App записаться на занятие → тренеру в Telegram приходит «🆕 Новая запись».
 - У брони с началом >8ч в Mini App есть «Отменить» → тап → бронь снята, тренеру приходит «❌ Отмена (клиентом)».
 - В админке раздел «Записи» → список; «Отменить» → клиенту (если он делился телефоном боту) приходит «❌ Ваша запись отменена».
 
-- [ ] **Шаг 4: Push**
+- [x] **Шаг 4: Push**
 ```bash
 cd /root/savvateam && git push origin main
 ```
