@@ -606,6 +606,18 @@
       text-transform: uppercase;
       color: var(--muted);
     }
+    .about-motif {
+      flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 0;
+    }
+    .about-motif svg {
+      width: min(56%, 172px);
+      height: auto;
+      filter: drop-shadow(0 10px 26px rgba(86,211,123,0.28));
+    }
     .about-stats-panel {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -1976,6 +1988,40 @@ function closeMenu(){
           <div>
             <div class="about-wordmark">SAVVA<span>.</span>TEAM</div>
             <div class="about-tagline">Академия падел тенниса</div>
+          </div>
+          <div class="about-motif">
+            <svg viewBox="0 0 200 210" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs>
+                <radialGradient id="padelBall" cx="38%" cy="32%" r="72%">
+                  <stop offset="0%" stop-color="#9bf2b3"/>
+                  <stop offset="58%" stop-color="#56d37b"/>
+                  <stop offset="100%" stop-color="#34a95d"/>
+                </radialGradient>
+              </defs>
+              <!-- racket head -->
+              <ellipse cx="90" cy="72" rx="50" ry="56" stroke="#56d37b" stroke-width="4" fill="rgba(86,211,123,0.06)"/>
+              <!-- perforations -->
+              <g fill="#56d37b" fill-opacity="0.4">
+                <circle cx="90" cy="42" r="4"/>
+                <circle cx="68" cy="58" r="4"/><circle cx="90" cy="58" r="4"/><circle cx="112" cy="58" r="4"/>
+                <circle cx="57" cy="76" r="4"/><circle cx="79" cy="76" r="4"/><circle cx="101" cy="76" r="4"/><circle cx="123" cy="76" r="4"/>
+                <circle cx="68" cy="94" r="4"/><circle cx="90" cy="94" r="4"/><circle cx="112" cy="94" r="4"/>
+                <circle cx="90" cy="110" r="4"/>
+              </g>
+              <!-- throat -->
+              <path d="M74 124 L84 150 M106 124 L96 150" stroke="#56d37b" stroke-width="4" stroke-linecap="round"/>
+              <!-- handle -->
+              <rect x="82" y="148" width="16" height="48" rx="7" stroke="#56d37b" stroke-width="4" fill="rgba(86,211,123,0.06)"/>
+              <g stroke="#56d37b" stroke-width="2" stroke-opacity="0.5">
+                <line x1="86" y1="159" x2="94" y2="159"/>
+                <line x1="86" y1="168" x2="94" y2="168"/>
+                <line x1="86" y1="177" x2="94" y2="177"/>
+              </g>
+              <!-- ball -->
+              <circle cx="150" cy="150" r="18" fill="url(#padelBall)"/>
+              <path d="M137 140 Q149 150 137 160" stroke="rgba(12,20,14,0.4)" stroke-width="2" fill="none"/>
+              <path d="M163 140 Q151 150 163 160" stroke="rgba(12,20,14,0.4)" stroke-width="2" fill="none"/>
+            </svg>
           </div>
           <div class="about-stats-panel">
             <div><div class="about-stat-num">200+</div><div class="about-stat-label">учеников</div></div>
