@@ -255,9 +255,21 @@ const upsertTgSession = db.prepare(
 );
 const getTgSession = db.prepare('SELECT phone FROM tg_sessions WHERE telegram_user_id = ?');
 const isCoachChat = db.prepare('SELECT slot FROM coaches WHERE telegram_chat_id = ?');
-const listConfirmedByPhone = db.prepare(
-  'SELECT id, name, level, audience, gender FROM students WHERE phone = ? AND confirmed = 1'
+const listAllConfirmed = db.prepare(
+  'SELECT id, name, level, audience, gender, phone FROM students WHERE confirmed = 1'
 );
+// Нормализация телефона для сравнения: только цифры, RU 8XXXXXXXXXX → 7XXXXXXXXXX
+function normPhone(p) {
+  return String(p || '').replace(/\D/g, '').replace(/^8(\d{10})$/, '7$1');
+}
+// Подтверждённые ученики с телефоном, эквивалентным заданному (без учёта форматирования)
+function confirmedByPhone(phone) {
+  const target = normPhone(phone);
+  if (!target) return [];
+  return listAllConfirmed.all()
+    .filter(s => normPhone(s.phone) === target)
+    .map(({ phone, ...rest }) => rest);
+}
 function coachNameBySlot(slot) {
   const m = /^coach(\d)$/.exec(slot); if (!m) return '';
   const row = db.prepare('SELECT value FROM content WHERE key = ?').get('coach' + m[1] + '_name');
@@ -589,7 +601,7 @@ app.post('/api/app/identify', (req, res) => {
   }
   const sess = getTgSession.get(user.id);
   if (!sess) return res.json({ status: 'need_phone' });
-  const students = listConfirmedByPhone.all(sess.phone);
+  const students = confirmedByPhone(sess.phone);
   if (!students.length) return res.json({ status: 'unmatched', manager: MANAGER_USERNAME });
   res.json({ status: 'ok', students });
 });
