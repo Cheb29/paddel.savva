@@ -694,6 +694,75 @@ app.post('/api/app/identify', (req, res) => {
   res.json({ status: 'ok', students });
 });
 
+// ── Group booking (Фаза 2B) ───────────────────────────────────────────────────
+function resolveAppUser(body) {
+  if (DEV_ALLOW_UNSIGNED && body && body.dev_user_id) {
+    if (body.dev_phone) upsertTgSession.run(Number(body.dev_user_id), String(body.dev_phone));
+    return { userId: Number(body.dev_user_id) };
+  }
+  const v = validateInitData(String((body && body.initData) || ''));
+  if (!v || !v.user) return { error: 'Невалидный initData', code: 401 };
+  return { userId: v.user.id };
+}
+function resolveAppStudent(body) {
+  const u = resolveAppUser(body);
+  if (u.error) return u;
+  const sess = getTgSession.get(u.userId);
+  if (!sess) return { status: 'need_phone' };
+  const student = confirmedByPhone(sess.phone).find(s => s.id === Number(body && body.student_id));
+  if (!student) return { status: 'forbidden' };
+  return { student };
+}
+
+app.post('/api/app/lessons', (req, res) => {
+  const r = resolveAppStudent(req.body || {});
+  if (r.code === 401) return res.status(401).json({ error: r.error });
+  if (r.status) return res.json({ status: r.status });
+  const student = r.student;
+  const booked = new Set(studentActiveBookings.all(student.id).map(b => b.group_id + '|' + b.date));
+  const lessons = groupOccurrences(14)
+    .filter(o => eligible(student, o))
+    .map(o => {
+      const count = countConfirmedStmt.get(o.group_id, o.date).n;
+      const status = count > o.capacity ? 'overbooked' : (count >= o.capacity ? 'full' : 'open');
+      return {
+        group_id: o.group_id, date: o.date, time: o.time, title: o.title, meta: o.meta, cat: o.cat,
+        coach_name: coachNameBySlot(o.coach_id || ''), capacity: o.capacity,
+        free: Math.max(0, o.capacity - count), status,
+        booked: booked.has(o.group_id + '|' + o.date),
+      };
+    })
+    .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : parseStartMinutes(a.time) - parseStartMinutes(b.time));
+  res.json({ status: 'ok', lessons });
+});
+
+app.post('/api/app/book', (req, res) => {
+  const r = resolveAppStudent(req.body || {});
+  if (r.code === 401) return res.status(401).json({ error: r.error });
+  if (r.status) return res.json({ status: r.status });
+  const student = r.student;
+  const group_id = String((req.body && req.body.group_id) || '');
+  const date = String((req.body && req.body.date) || '');
+  const occ = groupOccurrences(14).find(o => o.group_id === group_id && o.date === date);
+  if (!occ) return res.json({ error: 'expired' });
+  if (!eligible(student, occ)) return res.json({ error: 'ineligible' });
+  try {
+    const freeLeft = db.transaction(() => {
+      const count = countConfirmedStmt.get(group_id, date).n;
+      if (count >= occ.capacity) throw new Error('full');
+      if (activeBookingExists.get(student.id, group_id, date)) throw new Error('duplicate');
+      insertGroupBooking.run(student.id, group_id, date);
+      return occ.capacity - (count + 1);
+    })();
+    res.json({ ok: true, free: Math.max(0, freeLeft) });
+  } catch (e) {
+    const msg = e && e.message ? String(e.message) : '';
+    if (msg === 'full' || msg === 'duplicate') return res.json({ error: msg });
+    if (msg.includes('UNIQUE')) return res.json({ error: 'duplicate' });
+    return res.status(500).json({ error: 'server' });
+  }
+});
+
 // ── Telegram webhook (Фаза 2A) ────────────────────────────────────────────────
 app.post('/api/tg/webhook/:secret', (req, res) => {
   if (!WEBHOOK_SECRET ||
