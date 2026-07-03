@@ -41,7 +41,7 @@
 **Interfaces:**
 - Produces: таблицы `students`, `coaches`; prepared statements `insertStudent`, `findUnconfirmedByPhone`, `listStudents`, `getStudent`, `deleteStudentStmt`, `listCoaches`, `getCoach`, `updateCoachChat`.
 
-- [ ] **Шаг 1: Добавить DDL и statements**
+- [x] **Шаг 1: Добавить DDL и statements**
 
 В `server.js` сразу после строки `seedContent();` вставить:
 
@@ -90,7 +90,7 @@ const getCoach = db.prepare('SELECT slot FROM coaches WHERE slot = ?');
 const updateCoachChat = db.prepare('UPDATE coaches SET telegram_chat_id = ? WHERE slot = ?');
 ```
 
-- [ ] **Шаг 2: Проверить, что таблицы создаются и coaches засеян**
+- [x] **Шаг 2: Проверить, что таблицы создаются и coaches засеян**
 
 Run:
 ```bash
@@ -103,7 +103,7 @@ students cols: id,name,phone,level,audience,gender,confirmed,source,created_at
 coaches slots: coach1,coach2,coach3
 ```
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(phase1): students + coaches tables and prepared statements"
 ```
@@ -119,7 +119,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(phase1): students
 - Consumes: `insertStudent`, `listStudents`, `getStudent`, `deleteStudentStmt`, `requireSecret`, `db`.
 - Produces: `validateStudentPatch(body, {partial})`; роуты `GET/POST /api/students`, `PATCH/DELETE /api/students/:id`.
 
-- [ ] **Шаг 1: Добавить хелпер валидации и роуты**
+- [x] **Шаг 1: Добавить хелпер валидации и роуты**
 
 В `server.js` перед строкой `// ── GET /admin ──` вставить:
 
@@ -198,7 +198,7 @@ app.delete('/api/students/:id', requireSecret, (req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Проверить полный CRUD-цикл (локально, без секрета)**
+- [x] **Шаг 2: Проверить полный CRUD-цикл (локально, без секрета)**
 
 Run:
 ```bash
@@ -212,7 +212,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `id=<число>`; list count ≥1 с полями; patch → `http 200`; bad level → `http 400`; delete → `http 200`.
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(phase1): students CRUD API with validation"
 ```
@@ -227,7 +227,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(phase1): students
 **Interfaces:**
 - Consumes: `findUnconfirmedByPhone`, `insertStudent`.
 
-- [ ] **Шаг 1: Добавить хук после вставки лида**
+- [x] **Шаг 1: Добавить хук после вставки лида**
 
 В `server.js` внутри `POST /api/contact`, сразу после строки `const row = insertLead.run(name.trim(), phone.trim(), comment?.trim() ?? '', ip);` вставить:
 
@@ -244,7 +244,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(phase1): students
   } catch (e) { /* не блокируем ответ формы */ }
 ```
 
-- [ ] **Шаг 2: Проверить авто-создание и дедуп**
+- [x] **Шаг 2: Проверить авто-создание и дедуп**
 
 Run:
 ```bash
@@ -258,7 +258,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: после двух `/api/contact` с одним телефоном добавился **ровно один** ученик с `source:'lead'`, `confirmed:0`, `level:null` (дедуп сработал). `after` count = before+1.
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(phase1): auto-create student stub from each contact lead (dedupe by phone)"
 ```
@@ -274,7 +274,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(phase1): auto-cre
 - Consumes: `listCoaches`, `getCoach`, `updateCoachChat`, `db`, `requireSecret`.
 - Produces: роуты `GET /api/coaches`, `PATCH /api/coaches/:slot`.
 
-- [ ] **Шаг 1: Добавить роуты coaches**
+- [x] **Шаг 1: Добавить роуты coaches**
 
 В `server.js` сразу после `DELETE /api/students/:id` роута (Task 2) вставить:
 
@@ -299,7 +299,7 @@ app.patch('/api/coaches/:slot', requireSecret, (req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Проверить coaches API**
+- [x] **Шаг 2: Проверить coaches API**
 
 Run:
 ```bash
@@ -313,7 +313,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: список 3 слотов с именами из content (`coach1=Савва Шехватов` и т.д.); set → `http 200`; coach2 chat = `123456`; unknown slot → `http 404`.
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(phase1): coaches API (list with content names, set/clear telegram_chat_id)"
 ```
@@ -329,14 +329,14 @@ cd /root/savvateam && git add server.js && git commit -m "feat(phase1): coaches 
 - Consumes: `/api/students` API (Task 2), `adminSecret`, `openDrawer`, `closeDrawer`, `toast`, `escapeHtml`, `escapeAttr`, `exportCSV`, `state`.
 - Produces: серверные `renderStudents`, `loadStudents`, `openStudent`, `saveStudent`, `toggleStudentConfirmed`, `deleteStudent`, `newStudent`.
 
-- [ ] **Шаг 1: Обнулить демо-мок студентов в `SEED`**
+- [x] **Шаг 1: Обнулить демо-мок студентов в `SEED`**
 
 Заменить строки 274–282 (массив `students:[ ...5 демо-объектов... ],`) на:
 ```js
   students:[],
 ```
 
-- [ ] **Шаг 2: Переписать блок функций студентов**
+- [x] **Шаг 2: Переписать блок функций студентов**
 
 Заменить весь блок от `function renderStudents(c){` (строка 697) до закрывающей `}` функции `newStudent` (строка 772) на:
 
@@ -426,7 +426,7 @@ async function newStudent(){
 }
 ```
 
-- [ ] **Шаг 3: Проверить, что скрипт админки парсится**
+- [x] **Шаг 3: Проверить, что скрипт админки парсится**
 
 Run:
 ```bash
@@ -434,12 +434,12 @@ cd /root/savvateam && node -e "const h=require('fs').readFileSync('public/admin.
 ```
 Expected: `admin students OK`
 
-- [ ] **Шаг 4: Проверить в браузере (end-to-end)**
+- [x] **Шаг 4: Проверить в браузере (end-to-end)**
 
 Run: `cd /root/savvateam && node server.js`, открыть `http://localhost:3000/admin`, войти (локально `ADMIN_SECRET` не задан → любой пароль пройдёт), раздел «Ученики».
 Expected: список грузится с сервера (после Task 3 там есть заготовки из лидов с бейджем «из лида»); «+ Ученик» создаёт и открывает дровер; правка уровня/аудитории/пола/тумблера сохраняется (toast «Сохранено»); тумблер ✓ в строке переключает `Подтверждён`; удаление работает. Остановить сервер.
 
-- [ ] **Шаг 5: Commit**
+- [x] **Шаг 5: Commit**
 ```bash
 cd /root/savvateam && git add public/admin.html && git commit -m "feat(phase1): rewire admin Students section to server API (drop localStorage mock)"
 ```
@@ -455,14 +455,14 @@ cd /root/savvateam && git add public/admin.html && git commit -m "feat(phase1): 
 - Consumes: `/api/coaches` API (Task 4), `state.coaches`, `adminSecret`, `toast`, `escapeAttr`.
 - Produces: `loadCoachChats()`, `saveCoachChat(id)`; поле chat_id в карточке тренера.
 
-- [ ] **Шаг 1: Ленивая загрузка chat_id при входе в раздел**
+- [x] **Шаг 1: Ленивая загрузка chat_id при входе в раздел**
 
 В функции `renderCoaches(c)` (строка 1095), сразу после строки `if(!state.coaches)state.coaches=[];` вставить:
 ```js
   if(!state._coachChatsLoaded){ loadCoachChats().then(()=>{ state._coachChatsLoaded=true; renderCoaches(c); }); }
 ```
 
-- [ ] **Шаг 2: Добавить поле chat_id в карточку тренера**
+- [x] **Шаг 2: Добавить поле chat_id в карточку тренера**
 
 В `renderCoaches`, внутри `.editor-card` тренера, найти строку `<div class="editor-actions"><button class="btn btn-primary" onclick="saveCoach(${co.id})">Сохранить</button><button class="btn btn-danger" onclick="delCoach(${co.id})">Удалить</button></div>` и прямо перед ней вставить:
 ```js
@@ -471,7 +471,7 @@ cd /root/savvateam && git add public/admin.html && git commit -m "feat(phase1): 
        </div>
 ```
 
-- [ ] **Шаг 3: Добавить `loadCoachChats` и `saveCoachChat`**
+- [x] **Шаг 3: Добавить `loadCoachChats` и `saveCoachChat`**
 
 Сразу после функции `renderCoaches` (перед `async function saveCoach`) вставить:
 ```js
@@ -489,7 +489,7 @@ async function saveCoachChat(id){
 }
 ```
 
-- [ ] **Шаг 4: Проверить парсинг и наличие функций**
+- [x] **Шаг 4: Проверить парсинг и наличие функций**
 
 Run:
 ```bash
@@ -497,7 +497,7 @@ cd /root/savvateam && node -e "const h=require('fs').readFileSync('public/admin.
 ```
 Expected: `coach chat OK`
 
-- [ ] **Шаг 5: Проверить в браузере**
+- [x] **Шаг 5: Проверить в браузере**
 
 Run: `cd /root/savvateam && node server.js`, `http://localhost:3000/admin` → «Тренеры». У каждого тренера появилось поле «Telegram chat_id»; ввести значение → «Сохранить» → toast «chat_id сохранён». Проверить:
 ```bash
@@ -505,7 +505,7 @@ curl -s localhost:3000/api/coaches | node -e "let d='';process.stdin.on('data',c
 ```
 Expected: сохранённый chat_id виден у нужного слота. Остановить сервер.
 
-- [ ] **Шаг 6: Commit**
+- [x] **Шаг 6: Commit**
 ```bash
 cd /root/savvateam && git add public/admin.html && git commit -m "feat(phase1): coach telegram_chat_id field in admin coaches editor"
 ```
@@ -516,7 +516,7 @@ cd /root/savvateam && git add public/admin.html && git commit -m "feat(phase1): 
 
 **Files:** нет изменений кода — только выкладка.
 
-- [ ] **Шаг 1: Выложить сервер (в корень) и админку (в public/)**
+- [x] **Шаг 1: Выложить сервер (в корень) и админку (в public/)**
 ```bash
 cd /root/savvateam && export SSHPASS='oDR%r1C%rZjm'
 sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no" server.js root@45.139.29.201:/root/savvateam-site/
@@ -524,32 +524,32 @@ sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no" public/admin.html root
 echo "rsync done"
 ```
 
-- [ ] **Шаг 2: Перезапустить сервер и убедиться, что таблицы созданы**
+- [x] **Шаг 2: Перезапустить сервер и убедиться, что таблицы созданы**
 ```bash
 export SSHPASS='oDR%r1C%rZjm'
 sshpass -e ssh -o StrictHostKeyChecking=no root@45.139.29.201 "cd /root/savvateam-site && pm2 restart savvateam >/dev/null 2>&1 && sleep 1.5 && node -e \"const D=require('better-sqlite3');const db=new D('db/leads.db');console.log('students cols:',db.prepare('PRAGMA table_info(students)').all().length,'| coaches:',db.prepare('SELECT slot FROM coaches').all().map(c=>c.slot).join(','))\""
 ```
 Expected: `students cols: 9 | coaches: coach1,coach2,coach3`
 
-- [ ] **Шаг 3: Прод smoke-тест API (с секретом)**
+- [x] **Шаг 3: Прод smoke-тест API (с секретом)**
 ```bash
 export SSHPASS='oDR%r1C%rZjm'
 sshpass -e ssh -o StrictHostKeyChecking=no root@45.139.29.201 "curl -s 'localhost:3002/api/students?secret=SavvaKatitaLena' -o /dev/null -w 'students GET %{http_code}\n'; curl -s 'localhost:3002/api/coaches?secret=SavvaKatitaLena' | head -c 300; echo; curl -s 'localhost:3002/api/students' -o /dev/null -w 'no-secret %{http_code} (expect 401)\n'"
 ```
 Expected: `students GET 200`; список coaches с именами; `no-secret 401`.
 
-- [ ] **Шаг 4: Прод проверка формы → авто-ученик**
+- [x] **Шаг 4: Прод проверка формы → авто-ученик**
 ```bash
 export SSHPASS='oDR%r1C%rZjm'
 sshpass -e ssh -o StrictHostKeyChecking=no root@45.139.29.201 "curl -s -X POST localhost:3002/api/contact -H 'Content-Type: application/json' -d '{\"name\":\"Проверка Прод\",\"phone\":\"+7 905 000-11-22\",\"comment\":\"тест фазы 1\"}' -o /dev/null -w 'contact %{http_code}\n'; curl -s 'localhost:3002/api/students?secret=SavvaKatitaLena' | node -e \"let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const a=JSON.parse(d);const f=a.find(s=>s.phone.includes('905 000-11-22'));console.log('lead-student:',JSON.stringify(f||'НЕ НАЙДЕН'))})\""
 ```
 Expected: `contact 200`; найден ученик с `source:'lead'`, `confirmed:0`.
 
-- [ ] **Шаг 5: Проверить админку на проде**
+- [x] **Шаг 5: Проверить админку на проде**
 
 Открыть `https://savva.n2node.store/admin`, войти паролем `SavvaKatitaLena`. Раздел «Ученики» — список с сервера (есть заготовка «Проверка Прод» из лида); создание/правка/удаление/тумблер работают. Раздел «Тренеры» — поле chat_id сохраняется.
 
-- [ ] **Шаг 6: Push в репозиторий**
+- [x] **Шаг 6: Push в репозиторий**
 ```bash
 cd /root/savvateam && git push origin main
 ```
