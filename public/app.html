@@ -27,6 +27,8 @@
     .bk.free { color:var(--accent); }
     .bk.none { color:var(--muted); }
     .bk.booked { color:#FFB347; }
+    .cancel { padding:8px 14px; border:1px solid var(--border); border-radius:10px; background:transparent; color:#ff6b6b; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+    .cancel:active { transform:scale(0.96); }
   </style>
 </head>
 <body>
@@ -97,17 +99,37 @@
       let curDate = null;
       lessons.forEach(l => {
         if (l.date !== curDate) { curDate = l.date; html += '<div class="mday">'+fmtDate(l.date)+'</div>'; }
-        const badge = l.booked ? '<span class="bk booked">вы записаны</span>'
+        const startMs = lessonStartMs(l.date, l.time);
+        const cancelable = l.booked && (startMs - Date.now() >= 8*3600*1000);
+        const badge = l.booked
+            ? (cancelable ? '<button class="cancel" data-cg="'+esc(l.group_id)+'" data-cd="'+l.date+'">Отменить</button>'
+                          : '<span class="bk booked">вы записаны</span>')
           : l.status === 'open' ? '<span class="bk free">свободно '+l.free+'/'+l.capacity+'</span>'
           : l.status === 'overbooked' ? '<span class="bk none">перебор</span>'
           : '<span class="bk none">мест нет</span>';
         const clickable = (!l.booked && l.status === 'open');
         html += '<div class="lesson'+(clickable?' clickable':'')+'"'+(clickable?' data-g="'+esc(l.group_id)+'" data-d="'+l.date+'"':'')+'>'
-          + '<div><strong>'+esc(l.title)+'</strong><div class="muted">'+esc(l.time)+(l.coach_name?' · '+esc(l.coach_name):'')+'</div></div>'
+          + '<div><strong>'+esc(l.title)+'</strong><div class="muted">'+esc(l.time)+(l.coach_name?' · '+esc(l.coach_name):'')+(l.booked&&!cancelable?' · отмена через тренера':'')+'</div></div>'
           + badge + '</div>';
       });
       root.innerHTML = html;
       root.querySelectorAll('.lesson.clickable').forEach(el => el.onclick = () => book(el.dataset.g, el.dataset.d, el));
+      root.querySelectorAll('.cancel').forEach(el => el.onclick = (e) => { e.stopPropagation(); cancelBooking(el.dataset.cg, el.dataset.cd, el); });
+    }
+    function lessonStartMs(iso, time) {
+      const [y,m,d] = iso.split('-').map(Number);
+      const mm = /(\d{1,2}):(\d{2})/.exec(String(time||''));
+      const dt = new Date(y, m-1, d, mm?+mm[1]:0, mm?+mm[2]:0, 0, 0);
+      return dt.getTime();
+    }
+    async function cancelBooking(group_id, date, el) {
+      if (el) el.style.opacity = '0.5';
+      const data = await api('/api/app/cancel', { student_id: student.id, group_id, date });
+      if (data.ok) { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); loadLessons(); return; }
+      const msg = data.error === 'too_late' ? 'Отменить можно не позднее 8 часов до начала'
+        : data.error === 'not_found' ? '' : 'Ошибка отмены';
+      if (msg) { errEl.textContent = msg; setTimeout(() => errEl.textContent = '', 2500); }
+      loadLessons();
     }
 
     async function book(group_id, date, el) {
