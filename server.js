@@ -561,6 +561,39 @@ app.patch('/api/coaches/:slot', requireSecret, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Mini App identify (Фаза 2A) ───────────────────────────────────────────────
+function validateInitData(initData) {
+  const params = new URLSearchParams(initData);
+  const hash = params.get('hash');
+  if (!hash) return null;
+  params.delete('hash');
+  const dataCheckString = [...params.entries()]
+    .map(([k, v]) => `${k}=${v}`).sort().join('\n');
+  const secretKey = createHmac('sha256', 'WebAppData').update(TG_TOKEN).digest();
+  const calc = createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+  if (calc !== hash) return null;
+  const authDate = Number(params.get('auth_date') || 0);
+  if (!authDate || (Date.now() / 1000 - authDate) > 86400) return null;
+  try { return { user: JSON.parse(params.get('user') || 'null') }; } catch { return null; }
+}
+
+app.post('/api/app/identify', (req, res) => {
+  let user;
+  if (DEV_ALLOW_UNSIGNED && req.body && req.body.dev_user_id) {
+    user = { id: Number(req.body.dev_user_id) };
+    if (req.body.dev_phone) upsertTgSession.run(user.id, String(req.body.dev_phone));
+  } else {
+    const v = validateInitData(String((req.body && req.body.initData) || ''));
+    if (!v || !v.user) return res.status(401).json({ error: 'Невалидный initData' });
+    user = v.user;
+  }
+  const sess = getTgSession.get(user.id);
+  if (!sess) return res.json({ status: 'need_phone' });
+  const students = listConfirmedByPhone.all(sess.phone);
+  if (!students.length) return res.json({ status: 'unmatched', manager: MANAGER_USERNAME });
+  res.json({ status: 'ok', students });
+});
+
 // ── Telegram webhook (Фаза 2A) ────────────────────────────────────────────────
 app.post('/api/tg/webhook/:secret', (req, res) => {
   if (!WEBHOOK_SECRET ||
