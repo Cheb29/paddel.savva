@@ -143,6 +143,48 @@ const CONTENT_DEFAULTS = {
   coach3_photo:      'uploads/Елена 1.PNG',
   coach3_photo2:     'uploads/Елена 2.PNG',
   coach3_video:      '',
+  // schedule (JSON: {days:[5], rows:[{time, cells:[5 × (cell|null)]}]}); cell = {id,title,meta,cat,level_min,level_max,audience,gender,coach_id,capacity}
+  schedule_data: JSON.stringify({
+    days: ['ПН','ВТ','СР','ЧТ','ПТ'],
+    rows: [
+      { time: '9:30–11:00', cells: [
+        {id:'g_0_0', title:'Девушки 1,5–2', meta:'Beginner / Light', cat:'women', level_min:1.5, level_max:2.0, audience:'adult', gender:'f', coach_id:'coach2', capacity:8},
+        {id:'g_0_1', title:'Девушки 1–1,5', meta:'Start level', cat:'women', level_min:1.0, level_max:1.5, audience:'adult', gender:'f', coach_id:'coach2', capacity:8},
+        {id:'g_0_2', title:'Девушки 1,5–2', meta:'Beginner / Light', cat:'women', level_min:1.5, level_max:2.0, audience:'adult', gender:'f', coach_id:'coach2', capacity:8},
+        {id:'g_0_3', title:'Девушки 1–1,5', meta:'Start level', cat:'women', level_min:1.0, level_max:1.5, audience:'adult', gender:'f', coach_id:'coach2', capacity:8},
+        {id:'g_0_4', title:'Девушки 1,5–2', meta:'Beginner / Light', cat:'women', level_min:1.5, level_max:2.0, audience:'adult', gender:'f', coach_id:'coach2', capacity:8} ] },
+      { time: '13:00–15:00', cells: [
+        {id:'g_1_0', title:'Мужчины 2,5–3,5', meta:'Power group', cat:'men', level_min:2.5, level_max:3.5, audience:'adult', gender:'m', coach_id:'coach1', capacity:8},
+        {id:'g_1_1', title:'Экстремалы 3,5+', meta:'Advanced / Pro', cat:'extreme', level_min:3.5, level_max:7.0, audience:'adult', gender:'mixed', coach_id:'coach1', capacity:4},
+        {id:'g_1_2', title:'Мужчины 2,5–3,5', meta:'Power group', cat:'men', level_min:2.5, level_max:3.5, audience:'adult', gender:'m', coach_id:'coach1', capacity:8},
+        {id:'g_1_3', title:'Экстремалы 3,5+', meta:'Advanced / Pro', cat:'extreme', level_min:3.5, level_max:7.0, audience:'adult', gender:'mixed', coach_id:'coach1', capacity:4},
+        {id:'g_1_4', title:'Мужчины 2,5–3,5', meta:'Power group', cat:'men', level_min:2.5, level_max:3.5, audience:'adult', gender:'m', coach_id:'coach1', capacity:8} ] },
+      { time: '15:00–16:00', cells: [
+        null,
+        {id:'g_2_1', title:'Дети 5–7', meta:'Junior academy', cat:'kids', level_min:1.0, level_max:3.0, audience:'kids', gender:'mixed', coach_id:'coach3', capacity:6},
+        null, null, null ] },
+      { time: '16:00–17:30', cells: [
+        null,
+        {id:'g_3_1', title:'Дети 7–11', meta:'Junior academy', cat:'kids', level_min:1.0, level_max:3.0, audience:'kids', gender:'mixed', coach_id:'coach3', capacity:6},
+        null, null, null ] },
+      { time: '17:30–19:00', cells: [
+        null,
+        {id:'g_4_1', title:'Дети 11–16', meta:'Teen academy', cat:'kids', level_min:1.0, level_max:4.0, audience:'kids', gender:'mixed', coach_id:'coach3', capacity:6},
+        null, null, null ] },
+      { time: '19:00–20:30', cells: [
+        {id:'g_5_0', title:'Смешанные 2+', meta:'Mixed group', cat:'mixed', level_min:2.0, level_max:7.0, audience:'adult', gender:'mixed', coach_id:'coach1', capacity:8},
+        {id:'g_5_1', title:'Смешанные 2+', meta:'Mixed group', cat:'mixed', level_min:2.0, level_max:7.0, audience:'adult', gender:'mixed', coach_id:'coach1', capacity:8},
+        {id:'g_5_2', title:'Смешанные 2,5+', meta:'Mixed group', cat:'mixed', level_min:2.5, level_max:7.0, audience:'adult', gender:'mixed', coach_id:'coach1', capacity:8},
+        {id:'g_5_3', title:'Смешанные 1,5–2', meta:'Mixed group', cat:'mixed', level_min:1.5, level_max:2.0, audience:'adult', gender:'mixed', coach_id:'coach1', capacity:8},
+        {id:'g_5_4', title:'Смешанные 1,5–2', meta:'Mixed group', cat:'mixed', level_min:1.5, level_max:2.0, audience:'adult', gender:'mixed', coach_id:'coach1', capacity:8} ] },
+      { time: '20:30–22:00', cells: [
+        {id:'g_6_0', title:'Смешанные 2,5+', meta:'Mixed group', cat:'mixed', level_min:2.5, level_max:7.0, audience:'adult', gender:'mixed', coach_id:'coach1', capacity:8},
+        {id:'g_6_1', title:'Смешанные 1,5–2', meta:'Mixed group', cat:'mixed', level_min:1.5, level_max:2.0, audience:'adult', gender:'mixed', coach_id:'coach1', capacity:8},
+        {id:'g_6_2', title:'Смешанные 1,5–2', meta:'Mixed group', cat:'mixed', level_min:1.5, level_max:2.0, audience:'adult', gender:'mixed', coach_id:'coach1', capacity:8},
+        {id:'g_6_3', title:'Смешанные 2+', meta:'Mixed group', cat:'mixed', level_min:2.0, level_max:7.0, audience:'adult', gender:'mixed', coach_id:'coach1', capacity:8},
+        {id:'g_6_4', title:'Смешанные 2,5+', meta:'Mixed group', cat:'mixed', level_min:2.5, level_max:7.0, audience:'adult', gender:'mixed', coach_id:'coach1', capacity:8} ] },
+    ],
+  }),
 };
 
 // Seed defaults (INSERT OR IGNORE — не затирает сохранённые значения)
@@ -191,9 +233,37 @@ app.use(express.static(path.join(__dirname, 'public'), {
   },
 }));
 
+// ── Rate limiter: max 3 заявки в час с одного IP ─────────────────────────────
+const rateLimitMap = new Map(); // ip → [timestamp, ...]
+const RATE_LIMIT = 3;
+const RATE_WINDOW = 60 * 60 * 1000; // 1 час
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const hits = (rateLimitMap.get(ip) || []).filter(t => now - t < RATE_WINDOW);
+  if (hits.length >= RATE_LIMIT) return true;
+  hits.push(now);
+  rateLimitMap.set(ip, hits);
+  return false;
+}
+
+// Очистка старых записей раз в час
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, hits] of rateLimitMap) {
+    const fresh = hits.filter(t => now - t < RATE_WINDOW);
+    if (fresh.length === 0) rateLimitMap.delete(ip);
+    else rateLimitMap.set(ip, fresh);
+  }
+}, RATE_WINDOW);
+
 // ── POST /api/contact ─────────────────────────────────────────────────────────
 app.post('/api/contact', (req, res) => {
-  const { name, phone, comment } = req.body ?? {};
+  const { name, phone, comment, website } = req.body ?? {};
+
+  // Honeypot: боты заполняют скрытое поле website
+  if (website) return res.json({ ok: true });
+
   if (!name?.trim() || !phone?.trim()) {
     return res.status(400).json({ ok: false, error: 'Укажите имя и телефон' });
   }
@@ -201,7 +271,18 @@ app.post('/api/contact', (req, res) => {
     return res.status(400).json({ ok: false, error: 'Слишком длинные данные' });
   }
 
-  const ip = req.headers['x-forwarded-for']?.split(',')[0] ?? req.socket.remoteAddress ?? '';
+  // Валидация телефона: только цифры, 10–15 знаков
+  const digitsOnly = phone.replace(/\D/g, '');
+  if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+    return res.status(400).json({ ok: false, error: 'Некорректный номер телефона' });
+  }
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? req.socket.remoteAddress ?? '';
+
+  if (isRateLimited(ip)) {
+    return res.status(429).json({ ok: false, error: 'Слишком много заявок. Попробуйте позже.' });
+  }
+
   const row = insertLead.run(name.trim(), phone.trim(), comment?.trim() ?? '', ip);
 
   sendTelegram(
