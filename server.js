@@ -813,6 +813,24 @@ app.post('/api/app/book', (req, res) => {
   }
 });
 
+app.post('/api/app/cancel', (req, res) => {
+  const r = resolveAppStudent(req.body || {});
+  if (r.code === 401) return res.status(401).json({ error: r.error });
+  if (r.status) return res.json({ status: r.status });
+  const student = r.student;
+  const group_id = String((req.body && req.body.group_id) || '');
+  const date = String((req.body && req.body.date) || '');
+  const b = getActiveBooking.get(student.id, group_id, date);
+  if (!b) return res.json({ error: 'not_found' });
+  const time = b.time || ((cellById(group_id) || {}).time);
+  if (occStart(b.date, time).getTime() - Date.now() < 8 * 3600 * 1000) {
+    return res.json({ error: 'too_late' });
+  }
+  cancelBookingById.run(b.id);
+  notifyTrainerCancelled(student.name, b).catch(() => {});
+  res.json({ ok: true });
+});
+
 // ── Telegram webhook (Фаза 2A) ────────────────────────────────────────────────
 app.post('/api/tg/webhook/:secret', (req, res) => {
   if (!WEBHOOK_SECRET ||
