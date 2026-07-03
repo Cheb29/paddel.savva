@@ -225,6 +225,7 @@ tbody tr:hover .row-actions{opacity:1}
     <button class="nav-item" data-page="media"><span class="icon">▶</span>Видео и медиа</button>
     <button class="nav-item" data-page="programs"><span class="icon">◈</span>Программы</button>
     <button class="nav-item" data-page="schedule"><span class="icon">▤</span>Расписание</button>
+    <button class="nav-item" data-page="bookings"><span class="icon">✔</span>Записи</button>
     <button class="nav-item" data-page="prices"><span class="icon">₽</span>Цены</button>
     <button class="nav-item" data-page="testimonials"><span class="icon">"</span>Отзывы</button>
     <button class="nav-item" data-page="coaches"><span class="icon">★</span>Тренеры</button>
@@ -439,7 +440,7 @@ function navigate(page){
   document.getElementById('sidebar').classList.remove('open');
   const c=document.getElementById('pageContent');
   c.innerHTML='';
-  ({dashboard:renderDashboard,inbox:renderInbox,students:renderStudents,texts:renderTexts,media:renderMedia,programs:renderPrograms,prices:renderPrices,schedule:renderSchedule,testimonials:renderTestimonials,coaches:renderCoaches}[page]||renderDashboard)(c);
+  ({dashboard:renderDashboard,inbox:renderInbox,students:renderStudents,texts:renderTexts,media:renderMedia,programs:renderPrograms,prices:renderPrices,schedule:renderSchedule,bookings:renderBookings,testimonials:renderTestimonials,coaches:renderCoaches}[page]||renderDashboard)(c);
 }
 
 /* ============= TOAST ============= */
@@ -815,6 +816,33 @@ function savePrice(id){
   saveStore();toast('Сохранено');renderPrices(document.getElementById('pageContent'));
 }
 
+/* ============= BOOKINGS ============= */
+let bookingsScope = 'future';
+async function renderBookings(c){
+  c.innerHTML = `<div class="page-head"><div><div class="page-title">ЗАПИСИ</div><div class="page-sub" id="bkSub">Загрузка…</div></div>
+    <div class="page-actions"><button class="btn" id="bkToggle">${bookingsScope==='future'?'Показать все':'Только будущие'}</button></div></div>
+    <div id="bkList"><div class="empty"><div class="glyph">✔</div>Загрузка…</div></div>`;
+  document.getElementById('bkToggle').onclick=()=>{bookingsScope=bookingsScope==='future'?'all':'future';renderBookings(c);};
+  let list=[];
+  try{const r=await fetch('/api/bookings?scope='+bookingsScope+'&secret='+encodeURIComponent(adminSecret));if(r.ok)list=await r.json();}catch(e){}
+  const sub=document.getElementById('bkSub'); if(sub)sub.textContent=`${list.length} ${bookingsScope==='future'?'активных будущих':'всего'}`;
+  const el=document.getElementById('bkList'); if(!el)return;
+  if(!list.length){el.innerHTML=`<div class="empty"><div class="glyph">✔</div>Нет записей</div>`;return;}
+  el.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Ученик</th><th>Группа</th><th>Когда</th><th>Тренер</th><th>Статус</th><th></th></tr></thead><tbody>${list.map(b=>`
+    <tr>
+      <td><strong>${escapeHtml(b.student_name)}</strong></td>
+      <td>${escapeHtml(b.title)}</td>
+      <td>${escapeHtml(b.date)} <span style="color:var(--muted)">${escapeHtml(b.time||'')}</span></td>
+      <td>${escapeHtml(b.coach_name||'—')}</td>
+      <td><span class="tag tag-${b.status==='confirmed'?'active':'paused'}">${b.status==='confirmed'?'Активна':'Отменена'}</span></td>
+      <td>${b.status==='confirmed'?`<button class="tiny-btn danger" onclick="cancelBookingAdmin(${b.id})" title="Отменить">✕</button>`:''}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+async function cancelBookingAdmin(id){
+  if(!confirm('Отменить запись? Клиент получит уведомление.'))return;
+  const r=await fetch('/api/bookings/'+id+'/cancel?secret='+encodeURIComponent(adminSecret),{method:'PATCH'});
+  if(r.ok){toast('Запись отменена');renderBookings(document.getElementById('pageContent'));}else{toast('Ошибка');}
+}
 /* ============= SCHEDULE ============= */
 const SCH_CATS=[['','— пусто —'],['women','Женские'],['men','Мужские'],['kids','Детские'],['mixed','Смешанные'],['extreme','Экстрим']];
 const SCH_AUD=[['adult','Взрослые'],['kids','Дети']];
