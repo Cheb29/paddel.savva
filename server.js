@@ -301,9 +301,16 @@ const countConfirmedStmt = db.prepare(
 const activeBookingExists = db.prepare(
   "SELECT id FROM bookings WHERE student_id = ? AND group_id = ? AND date = ? AND status = 'confirmed' AND type = 'group' LIMIT 1"
 );
+try { db.exec("ALTER TABLE bookings ADD COLUMN title TEXT"); } catch { /* колонка есть */ }
+try { db.exec("ALTER TABLE bookings ADD COLUMN time TEXT"); } catch { /* колонка есть */ }
 const insertGroupBooking = db.prepare(
-  "INSERT INTO bookings (student_id, type, group_id, date) VALUES (?, 'group', ?, ?)"
+  "INSERT INTO bookings (student_id, type, group_id, date, coach_id, title, time) VALUES (?, 'group', ?, ?, ?, ?, ?)"
 );
+const getActiveBooking = db.prepare(
+  "SELECT * FROM bookings WHERE student_id = ? AND group_id = ? AND date = ? AND status = 'confirmed' AND type = 'group' LIMIT 1"
+);
+const cancelBookingById = db.prepare("UPDATE bookings SET status = 'cancelled' WHERE id = ?");
+const getBookingById = db.prepare("SELECT * FROM bookings WHERE id = ?");
 const studentActiveBookings = db.prepare(
   "SELECT group_id, date FROM bookings WHERE student_id = ? AND status = 'confirmed' AND type = 'group'"
 );
@@ -364,6 +371,46 @@ function eligible(student, cell) {
   if (!(cell.level_min <= student.level && student.level <= cell.level_max)) return false;
   if (!(cell.gender === 'mixed' || cell.gender === student.gender)) return false;
   return true;
+}
+
+// ── Booking notifications (Фаза 2C) ───────────────────────────────────────────
+function cellById(group_id) {
+  const data = scheduleData();
+  if (!data || !Array.isArray(data.rows)) return null;
+  for (const row of data.rows) {
+    for (const cell of (row.cells || [])) {
+      if (cell && cell.id === group_id) return { title: cell.title, time: row.time, coach_id: cell.coach_id };
+    }
+  }
+  return null;
+}
+const coachBySlot = db.prepare('SELECT telegram_chat_id FROM coaches WHERE slot = ?');
+const allTgSessions = db.prepare('SELECT telegram_user_id, phone FROM tg_sessions');
+function coachChatIdForGroup(coachId) {
+  if (!coachId) return null;
+  const row = coachBySlot.get(coachId);
+  return row && row.telegram_chat_id ? row.telegram_chat_id : null;
+}
+function clientChatIdsForStudent(student) {
+  const target = normPhone(student && student.phone);
+  if (!target) return [];
+  return allTgSessions.all().filter(s => normPhone(s.phone) === target).map(s => s.telegram_user_id);
+}
+async function notifyBookingCreated(name, occ) {
+  const chat = coachChatIdForGroup(occ.coach_id);
+  if (!chat) return;
+  await tgApi('sendMessage', { chat_id: chat, text: `🆕 Новая запись\n👤 ${name}\n🏷 ${occ.title}\n📅 ${occ.date} ${occ.time}` });
+}
+async function notifyTrainerCancelled(name, booking) {
+  const chat = coachChatIdForGroup(booking.coach_id);
+  if (!chat) return;
+  await tgApi('sendMessage', { chat_id: chat, text: `❌ Отмена записи (клиентом)\n👤 ${name}\n🏷 ${booking.title || ''}\n📅 ${booking.date} ${booking.time || ''}` });
+}
+async function notifyClientCancelled(student, booking) {
+  const chats = clientChatIdsForStudent(student);
+  for (const chat of chats) {
+    await tgApi('sendMessage', { chat_id: chat, text: `❌ Ваша запись отменена\n🏷 ${booking.title || ''}\n📅 ${booking.date} ${booking.time || ''}\nПо вопросам — к тренеру.` });
+  }
 }
 const listCoaches = db.prepare('SELECT slot, telegram_chat_id FROM coaches ORDER BY slot');
 const getCoach = db.prepare('SELECT slot FROM coaches WHERE slot = ?');
@@ -753,9 +800,10 @@ app.post('/api/app/book', (req, res) => {
       const count = countConfirmedStmt.get(group_id, date).n;
       if (count >= occ.capacity) throw new Error('full');
       if (activeBookingExists.get(student.id, group_id, date)) throw new Error('duplicate');
-      insertGroupBooking.run(student.id, group_id, date);
+      insertGroupBooking.run(student.id, group_id, date, occ.coach_id || null, occ.title || null, occ.time || null);
       return occ.capacity - (count + 1);
     })();
+    notifyBookingCreated(student.name, occ).catch(() => {});
     res.json({ ok: true, free: Math.max(0, freeLeft) });
   } catch (e) {
     const msg = e && e.message ? String(e.message) : '';
