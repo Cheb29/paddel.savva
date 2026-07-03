@@ -2558,9 +2558,87 @@ document.getElementById('contactSubmit').addEventListener('click', async () => {
     });
 
     // Запуск видео с URL из content API
+    renderSchedule(c);
     loadVideos(c);
   } catch(e) { loadVideos({}); }
 })();
+
+function renderSchedule(c) {
+  const grid = document.getElementById('schedule-grid');
+  const mobile = document.getElementById('schedule-mobile');
+  const legend = document.getElementById('schedule-legend');
+  if (!grid) return;
+  let data;
+  try { data = JSON.parse(c.schedule_data); } catch (e) { return; }
+  if (!data || !Array.isArray(data.days) || !Array.isArray(data.rows)) return;
+
+  const days = data.days;
+  const CAT_LABEL = { women:'Женские / Mixed', men:'Мужские / Power', kids:'Детские группы', mixed:'Смешанные', extreme:'Advanced glow' };
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const usedCats = new Set();
+
+  const cardHtml = (cell, dayName, time) => {
+    const cat = cell.cat || 'mixed';
+    usedCats.add(cat);
+    const book = `Запись: ${cell.title} · ${dayName} ${time}`;
+    return `<div class="sch-card ${esc(cat)}" role="button" tabindex="0" data-book="${esc(book)}">`
+      + `<div class="t">${esc(cell.title)}</div>`
+      + (cell.meta ? `<div class="m">${esc(cell.meta)}</div>` : '')
+      + `</div>`;
+  };
+
+  // Десктоп-грид: колонка времени + N дней
+  grid.style.gridTemplateColumns = `110px repeat(${days.length}, minmax(180px, 1fr))`;
+  let html = '<div class="sch-head" style="background:transparent;border:0">Время</div>';
+  days.forEach(d => { html += `<div class="sch-head">${esc(d)}</div>`; });
+  data.rows.forEach(row => {
+    html += `<div class="sch-time">${esc(row.time)}</div>`;
+    for (let i = 0; i < days.length; i++) {
+      const cell = (row.cells || [])[i];
+      if (!cell || !cell.title) { html += '<div class="sch-cell sch-empty"></div>'; continue; }
+      html += `<div class="sch-cell">${cardHtml(cell, days[i], row.time)}</div>`;
+    }
+  });
+  grid.innerHTML = html;
+
+  // Мобильный список: сгруппирован по дням
+  if (mobile) {
+    let mhtml = '';
+    for (let i = 0; i < days.length; i++) {
+      const dayCards = data.rows
+        .map(row => ({ cell: (row.cells || [])[i], time: row.time }))
+        .filter(x => x.cell && x.cell.title);
+      if (!dayCards.length) continue;
+      mhtml += `<div class="sch-mday">${esc(days[i])}</div>`;
+      dayCards.forEach(x => {
+        mhtml += `<div class="sch-mtime">${esc(x.time)}</div>` + cardHtml(x.cell, days[i], x.time);
+      });
+    }
+    mobile.innerHTML = mhtml;
+  }
+
+  // Легенда — авто из встречающихся cat
+  if (legend) {
+    const order = ['women','mixed','men','kids','extreme'];
+    legend.innerHTML = order.filter(k => usedCats.has(k)).map(k => {
+      const dotCls = k === 'men' ? 'warm' : '';
+      return `<div class="sch-legend-item"><span class="sch-dot ${dotCls}"></span>${CAT_LABEL[k]}</div>`;
+    }).join('');
+  }
+
+  // Клик по карточке → форма записи с предзаполнением
+  const goBook = (text) => {
+    const field = document.getElementById('contactComment');
+    if (field) field.value = text;
+    const contact = document.getElementById('contact');
+    if (contact) contact.scrollIntoView({ behavior: 'smooth' });
+    if (field) setTimeout(() => field.focus({ preventScroll: true }), 600);
+  };
+  document.querySelectorAll('.sch-card').forEach(card => {
+    card.addEventListener('click', () => goBook(card.dataset.book));
+    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goBook(card.dataset.book); } });
+  });
+}
 </script>
 
 </body>
