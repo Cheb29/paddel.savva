@@ -817,6 +817,80 @@ function savePrice(id){
   saveStore();toast('Сохранено');renderPrices(document.getElementById('pageContent'));
 }
 
+/* ============= SCHEDULE ============= */
+const SCH_CATS=[['','— пусто —'],['women','Женские'],['men','Мужские'],['kids','Детские'],['mixed','Смешанные'],['extreme','Экстрим']];
+const SCH_AUD=[['adult','Взрослые'],['kids','Дети']];
+const SCH_GEN=[['mixed','Смешанная'],['m','Мужская'],['f','Женская']];
+let schOpenCell=null; // "ri:ci" ячейки с раскрытым блоком допуска
+function genSchId(){return 'g_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function schCoachOptions(sel){
+  const opts=[['','—']].concat((state.coaches||[]).map(co=>['coach'+co.id, co.name]));
+  return opts.map(o=>`<option value="${escapeAttr(o[0])}" ${o[0]===(sel||'')?'selected':''}>${escapeHtml(o[1])}</option>`).join('');
+}
+function renderSchedule(c){
+  const sch=state.schedule||(state.schedule={days:['ПН','ВТ','СР','ЧТ','ПТ'],rows:[]});
+  if(!Array.isArray(sch.days)) sch.days=['ПН','ВТ','СР','ЧТ','ПТ'];
+  if(!Array.isArray(sch.rows)) sch.rows=[];
+  const days=sch.days;
+  c.innerHTML=`<div class="page-head"><div><div class="page-title">РАСПИСАНИЕ</div><div class="page-sub">${sch.rows.length} строк · ${days.length} дней · клик по карточке на сайте ведёт к форме записи</div></div>
+    <div class="page-actions"><button class="btn" onclick="addSchDay()">+ День</button><button class="btn" onclick="delSchDay()">− День</button><button class="btn" onclick="addSchRow()">+ Строка</button><button class="btn btn-primary" onclick="saveSchedule()">Сохранить и опубликовать</button></div></div>
+    <div style="overflow-x:auto"><table style="border-collapse:separate;border-spacing:8px;min-width:${140+days.length*180}px">
+    <thead><tr><th style="width:90px">Время</th>${days.map((d,di)=>`<th><input data-schday="${di}" value="${escapeAttr(d)}" style="width:150px;text-align:center"/></th>`).join('')}<th></th></tr></thead>
+    <tbody>${sch.rows.map((row,ri)=>`<tr>
+      <td style="vertical-align:top"><input data-sch="${ri}" data-f="time" value="${escapeAttr(row.time||'')}" style="width:84px"/></td>
+      ${days.map((_,ci)=>{const cell=(row.cells&&row.cells[ci])||{};const open=schOpenCell===ri+':'+ci;return `<td style="vertical-align:top">
+        <input data-sch="${ri}" data-c="${ci}" data-f="title" placeholder="Название" value="${escapeAttr(cell.title||'')}" style="width:170px;margin-bottom:4px"/>
+        <input data-sch="${ri}" data-c="${ci}" data-f="meta" placeholder="Meta" value="${escapeAttr(cell.meta||'')}" style="width:170px;margin-bottom:4px"/>
+        <div style="display:flex;gap:4px;margin-bottom:4px">
+          <select data-sch="${ri}" data-c="${ci}" data-f="cat" style="width:120px">${SCH_CATS.map(o=>`<option value="${o[0]}" ${((cell.cat||'')===o[0])?'selected':''}>${o[1]}</option>`).join('')}</select>
+          <button class="btn" style="padding:4px 8px" onclick="toggleSchCell(${ri},${ci})">Допуск ${open?'▲':'▾'}</button>
+        </div>
+        <div style="${open?'':'display:none'};background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;width:170px">
+          <div style="display:flex;gap:4px;margin-bottom:4px"><input data-sch="${ri}" data-c="${ci}" data-f="level_min" type="number" step="0.5" min="1" max="7" placeholder="ур. от" value="${cell.level_min!=null?cell.level_min:''}" style="width:78px"/><input data-sch="${ri}" data-c="${ci}" data-f="level_max" type="number" step="0.5" min="1" max="7" placeholder="ур. до" value="${cell.level_max!=null?cell.level_max:''}" style="width:78px"/></div>
+          <select data-sch="${ri}" data-c="${ci}" data-f="audience" style="width:100%;margin-bottom:4px">${SCH_AUD.map(o=>`<option value="${o[0]}" ${((cell.audience||'adult')===o[0])?'selected':''}>${o[1]}</option>`).join('')}</select>
+          <select data-sch="${ri}" data-c="${ci}" data-f="gender" style="width:100%;margin-bottom:4px">${SCH_GEN.map(o=>`<option value="${o[0]}" ${((cell.gender||'mixed')===o[0])?'selected':''}>${o[1]}</option>`).join('')}</select>
+          <select data-sch="${ri}" data-c="${ci}" data-f="coach_id" style="width:100%;margin-bottom:4px">${schCoachOptions(cell.coach_id)}</select>
+          <input data-sch="${ri}" data-c="${ci}" data-f="capacity" type="number" min="1" placeholder="мест" value="${cell.capacity!=null?cell.capacity:''}" style="width:100%"/>
+        </div>
+      </td>`;}).join('')}
+      <td style="vertical-align:top"><button class="btn btn-danger" onclick="delSchRow(${ri})">✕</button></td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+function collectSchedule(){
+  const sch=state.schedule;
+  const g=(ri,ci,f)=>{const el=document.querySelector(`[data-sch="${ri}"][data-c="${ci}"][data-f="${f}"]`);return el?el.value.trim():''};
+  // дни
+  sch.days=sch.days.map((d,di)=>{const el=document.querySelector(`[data-schday="${di}"]`);return el?el.value.trim()||d:d});
+  sch.rows.forEach((row,ri)=>{
+    const t=document.querySelector(`[data-sch="${ri}"][data-f="time"]`); if(t)row.time=t.value.trim();
+    row.cells=sch.days.map((_,ci)=>{
+      const title=g(ri,ci,'title'); if(!title)return null;
+      const prev=(row.cells&&row.cells[ci])||{};
+      const lmin=parseFloat(g(ri,ci,'level_min')); const lmax=parseFloat(g(ri,ci,'level_max')); const cap=parseInt(g(ri,ci,'capacity'),10);
+      return {
+        id: prev.id||genSchId(),
+        title, meta:g(ri,ci,'meta'),
+        cat:g(ri,ci,'cat')||'mixed',
+        level_min: isNaN(lmin)?1:lmin,
+        level_max: isNaN(lmax)?7:lmax,
+        audience:g(ri,ci,'audience')||'adult',
+        gender:g(ri,ci,'gender')||'mixed',
+        coach_id:g(ri,ci,'coach_id')||'',
+        capacity: isNaN(cap)?8:cap,
+      };
+    });
+  });
+}
+function toggleSchCell(ri,ci){collectSchedule();const key=ri+':'+ci;schOpenCell=(schOpenCell===key)?null:key;renderSchedule(document.getElementById('pageContent'))}
+function addSchRow(){collectSchedule();state.schedule.rows.push({time:'00:00–00:00',cells:state.schedule.days.map(()=>null)});renderSchedule(document.getElementById('pageContent'))}
+function delSchRow(i){collectSchedule();if(!confirm('Удалить строку?'))return;state.schedule.rows.splice(i,1);renderSchedule(document.getElementById('pageContent'))}
+function addSchDay(){collectSchedule();state.schedule.days.push('ДЕНЬ');state.schedule.rows.forEach(r=>{(r.cells=r.cells||[]).push(null)});renderSchedule(document.getElementById('pageContent'))}
+function delSchDay(){collectSchedule();if(state.schedule.days.length<=1)return;if(!confirm('Удалить последний день?'))return;state.schedule.days.pop();state.schedule.rows.forEach(r=>{if(r.cells)r.cells.pop()});renderSchedule(document.getElementById('pageContent'))}
+async function saveSchedule(){
+  collectSchedule();
+  const res=await fetch('/api/content?secret='+encodeURIComponent(adminSecret),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({schedule_data:JSON.stringify(state.schedule)})});
+  if(res.ok){saveStore();toast('Расписание опубликовано')}else{toast('Ошибка сохранения')}
+}
 /* ============= TESTIMONIALS ============= */
 function renderTestimonials(c){
   c.innerHTML=`<div class="page-head"><div><div class="page-title">ОТЗЫВЫ</div><div class="page-sub">${state.testimonials.length} отзывов</div></div><div class="page-actions"><button class="btn btn-primary" onclick="addTest()">+ Отзыв</button></div></div>
