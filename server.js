@@ -561,6 +561,17 @@ app.patch('/api/coaches/:slot', requireSecret, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Telegram webhook (Фаза 2A) ────────────────────────────────────────────────
+app.post('/api/tg/webhook/:secret', (req, res) => {
+  if (!WEBHOOK_SECRET ||
+      req.params.secret !== WEBHOOK_SECRET ||
+      req.get('X-Telegram-Bot-Api-Secret-Token') !== WEBHOOK_SECRET) {
+    return res.sendStatus(403);
+  }
+  handleTgUpdate(req.body).catch(() => {});
+  res.sendStatus(200);
+});
+
 // ── GET /admin ─────────────────────────────────────────────────────────────────
 app.get('/admin', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
@@ -571,7 +582,18 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+async function initWebhook() {
+  if (!TG_TOKEN || !PUBLIC_URL || !WEBHOOK_SECRET) {
+    console.log('Telegram webhook: отключён (нет PUBLIC_URL/WEBHOOK_SECRET/токена)');
+    return;
+  }
+  const url = `${PUBLIC_URL}/api/tg/webhook/${WEBHOOK_SECRET}`;
+  const r = await tgApi('setWebhook', { url, secret_token: WEBHOOK_SECRET, allowed_updates: ['message'] });
+  console.log('Telegram webhook:', r && r.ok ? 'установлен → ' + url : 'ошибка ' + JSON.stringify(r));
+}
+
 app.listen(PORT, () => {
   console.log(`Savva Team backend запущен: http://localhost:${PORT}`);
   if (TG_TOKEN) console.log('Telegram уведомления: включены');
+  initWebhook();
 });
