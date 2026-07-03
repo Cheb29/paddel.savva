@@ -414,6 +414,32 @@ async function notifyClientCancelled(student, booking) {
 }
 const listCoaches = db.prepare('SELECT slot, telegram_chat_id FROM coaches ORDER BY slot');
 const getCoach = db.prepare('SELECT slot FROM coaches WHERE slot = ?');
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS coach_availability (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    slot      TEXT NOT NULL,
+    day       INTEGER NOT NULL,
+    from_time TEXT NOT NULL,
+    to_time   TEXT NOT NULL
+  )
+`);
+const listAvailability = db.prepare('SELECT id, day, from_time, to_time FROM coach_availability WHERE slot = ? ORDER BY day, from_time');
+const deleteAvailability = db.prepare('DELETE FROM coach_availability WHERE slot = ?');
+const insertAvailability = db.prepare('INSERT INTO coach_availability (slot, day, from_time, to_time) VALUES (?, ?, ?, ?)');
+function isHHMM(s) { return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(s || '')); }
+function validateWindows(windows) {
+  if (!Array.isArray(windows)) return { error: 'windows должен быть массивом' };
+  const out = [];
+  for (const w of windows) {
+    const day = Number(w && w.day);
+    if (!Number.isInteger(day) || day < 0 || day > 6) return { error: 'day должен быть 0–6' };
+    if (!isHHMM(w.from_time) || !isHHMM(w.to_time)) return { error: 'время в формате HH:MM' };
+    if (String(w.from_time) >= String(w.to_time)) return { error: 'from_time должен быть меньше to_time' };
+    out.push({ day, from_time: w.from_time, to_time: w.to_time });
+  }
+  return { windows: out };
+}
 const updateCoachChat = db.prepare('UPDATE coaches SET telegram_chat_id = ? WHERE slot = ?');
 
 // ── Telegram helper ───────────────────────────────────────────────────────────
