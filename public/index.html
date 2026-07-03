@@ -34,6 +34,8 @@
       font-family: var(--font-body);
       overflow-x: hidden;
       cursor: none;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     /* Custom cursor — tennis ball (realistic felt) */
@@ -675,30 +677,47 @@
     .programs-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 2px;
+      gap: 18px;
       margin-top: 64px;
     }
     .program-card {
       background: var(--surface);
       padding: 40px 32px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.35);
       position: relative;
       overflow: hidden;
       cursor: none;
-      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.4s ease;
     }
     .program-card::before {
       content: '';
       position: absolute;
       inset: 0;
+      border-radius: inherit;
       background: linear-gradient(135deg, var(--accent-dim) 0%, transparent 60%);
       opacity: 0;
       transition: opacity 0.4s;
+      pointer-events: none;
     }
     .program-card:hover::before { opacity: 1; }
-    .program-card:hover { transform: translateY(-4px); }
+    .program-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 24px 48px -14px rgba(0,0,0,0.6), 0 2px 6px rgba(0,0,0,0.3);
+      border-color: rgba(86,211,123,0.28);
+    }
     .program-card.featured {
-      background: var(--accent);
+      background: linear-gradient(158deg, #74e293 0%, var(--accent) 52%, #3fb866 100%);
       color: var(--bg);
+      border-color: transparent;
+      box-shadow: 0 20px 44px -16px rgba(86,211,123,0.5), inset 0 1px 0 rgba(255,255,255,0.28);
+    }
+    .program-card.featured:hover {
+      box-shadow: 0 30px 60px -14px rgba(86,211,123,0.55), inset 0 1px 0 rgba(255,255,255,0.32);
+      border-color: transparent;
     }
     .program-card.featured .program-level,
     .program-card.featured .program-desc,
@@ -939,21 +958,41 @@
     .prices-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 2px;
+      gap: 18px;
       margin-top: 64px;
+      align-items: stretch;
     }
     .price-card {
       background: var(--surface);
       padding: 48px 36px;
+      border-radius: 26px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.35);
       position: relative;
       overflow: hidden;
-      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.4s ease;
       cursor: none;
     }
-    .price-card:hover { transform: translateY(-6px); }
+    .price-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 28px 56px -16px rgba(0,0,0,0.62), 0 3px 8px rgba(0,0,0,0.3);
+      border-color: rgba(86,211,123,0.24);
+    }
     .price-card.popular {
-      background: var(--text);
+      background: linear-gradient(165deg, #fbfbf8 0%, #ececE6 100%);
       color: var(--bg);
+      border-color: transparent;
+      transform: translateY(-8px);
+      box-shadow: 0 26px 54px -16px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+    .price-card.popular:hover {
+      transform: translateY(-14px);
+      box-shadow: 0 36px 66px -14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.6);
+      border-color: transparent;
     }
     .popular-badge {
       position: absolute;
@@ -964,7 +1003,9 @@
       font-weight: 700;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      padding: 6px 14px;
+      padding: 7px 15px;
+      border-radius: 0 0 0 14px;
+      box-shadow: 0 4px 12px -2px rgba(86,211,123,0.5);
     }
     .price-name {
       font-family: var(--font-head);
@@ -997,6 +1038,7 @@
       font-size: 64px;
       line-height: 1;
       color: var(--text);
+      font-variant-numeric: tabular-nums;
     }
     .price-card.popular .price-num { color: var(--bg); }
     .price-period {
@@ -1036,26 +1078,33 @@
     }
     .price-btn {
       width: 100%;
-      padding: 14px;
+      margin-top: auto;
+      padding: 15px;
+      min-height: 48px;
+      border-radius: 14px;
       font-size: 12px;
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       cursor: none;
-      transition: all 0.25s;
+      transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease,
+                  box-shadow 0.25s ease, transform 0.14s cubic-bezier(0.2, 0, 0, 1);
     }
+    .price-btn:active { transform: scale(0.96); }
     .price-btn-ghost {
       background: transparent;
       border: 1px solid var(--border);
       color: var(--text);
     }
-    .price-btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .price-btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
     .price-btn-solid {
       background: var(--accent);
       border: none;
       color: var(--bg);
+      box-shadow: 0 8px 20px -6px rgba(86,211,123,0.5);
     }
-    .price-btn-solid:hover { opacity: 0.85; transform: translateY(-1px); }
+    .price-btn-solid:hover { transform: translateY(-2px); box-shadow: 0 13px 26px -6px rgba(86,211,123,0.62); }
+    .price-btn-solid:active { transform: scale(0.96); }
 
     /* SHOWREEL — Coaches Carousel */
     #showreel { background: var(--bg2); }
@@ -1724,6 +1773,9 @@
       /* PRICES */
       .prices-grid { grid-template-columns: 1fr; gap: 14px; margin-top: 40px; }
       .price-card { padding: 36px 26px; }
+      .price-card.popular { transform: none; }
+      .price-card.popular:hover { transform: translateY(-6px); }
+      .price-card:hover { transform: translateY(-6px); }
       .price-num { font-size: 52px; }
       .price-name { font-size: 24px; }
 
