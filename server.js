@@ -831,6 +831,39 @@ app.post('/api/app/cancel', (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/bookings', requireSecret, (req, res) => {
+  const scope = req.query.scope === 'all' ? 'all' : 'future';
+  const rows = db.prepare(
+    "SELECT b.*, s.name AS student_name FROM bookings b LEFT JOIN students s ON s.id = b.student_id WHERE b.type = 'group' ORDER BY b.date, b.time"
+  ).all();
+  const now = Date.now();
+  const out = rows.map(b => {
+    const cell = cellById(b.group_id) || {};
+    const title = b.title || cell.title || '(группа изменена)';
+    const time = b.time || cell.time || '';
+    return {
+      id: b.id, student_id: b.student_id, student_name: b.student_name || '—',
+      group_id: b.group_id, date: b.date, title, time,
+      coach_name: coachNameBySlot(b.coach_id || cell.coach_id || ''),
+      status: b.status, created_at: b.created_at,
+    };
+  }).filter(b => scope === 'all' ? true : (b.status === 'confirmed' && occStart(b.date, b.time).getTime() > now));
+  res.json(out);
+});
+
+app.patch('/api/bookings/:id/cancel', requireSecret, (req, res) => {
+  const b = getBookingById.get(Number(req.params.id));
+  if (!b) return res.status(404).json({ error: 'not_found' });
+  if (b.status !== 'cancelled') {
+    cancelBookingById.run(b.id);
+    const cell = cellById(b.group_id) || {};
+    b.title = b.title || cell.title; b.time = b.time || cell.time;
+    const student = getStudent.get(b.student_id);
+    if (student) notifyClientCancelled(student, b).catch(() => {});
+  }
+  res.json({ ok: true });
+});
+
 // ── Telegram webhook (Фаза 2A) ────────────────────────────────────────────────
 app.post('/api/tg/webhook/:secret', (req, res) => {
   if (!WEBHOOK_SECRET ||
