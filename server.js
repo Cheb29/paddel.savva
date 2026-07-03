@@ -582,6 +582,53 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+async function handleTgUpdate(update) {
+  const msg = update && update.message;
+  if (!msg) return;
+  const chatId = msg.chat && msg.chat.id;
+  const userId = msg.from && msg.from.id;
+  if (!chatId || !userId) return;
+
+  // Пользователь поделился телефоном (доверяем только собственному контакту)
+  if (msg.contact && msg.contact.user_id === userId) {
+    upsertTgSession.run(userId, msg.contact.phone_number);
+    await tgApi('sendMessage', {
+      chat_id: chatId,
+      text: 'Телефон получен ✅',
+      reply_markup: { remove_keyboard: true },
+    });
+    if (PUBLIC_URL) {
+      await tgApi('sendMessage', {
+        chat_id: chatId,
+        text: '📅 Открывайте запись на тренировку:',
+        reply_markup: { inline_keyboard: [[{ text: '📅 Открыть запись', web_app: { url: PUBLIC_URL + '/app' } }]] },
+      });
+    }
+    return;
+  }
+
+  // Тренер: user_id совпал с coaches.telegram_chat_id
+  const coach = isCoachChat.get(userId);
+  if (coach) {
+    const name = coachNameBySlot(coach.slot);
+    await tgApi('sendMessage', {
+      chat_id: chatId,
+      text: `Вы тренер ${name || ''} команды Savva 🎾\nУведомления о записях учеников будут приходить сюда.`,
+    });
+    return;
+  }
+
+  // Клиент: приветствие + запрос телефона
+  await tgApi('sendMessage', {
+    chat_id: chatId,
+    text: 'Добро пожаловать в Savva Team! 🎾\nЧтобы записаться на тренировку, поделитесь номером телефона.',
+    reply_markup: {
+      keyboard: [[{ text: '📱 Поделиться телефоном', request_contact: true }]],
+      resize_keyboard: true, one_time_keyboard: true,
+    },
+  });
+}
+
 async function initWebhook() {
   if (!TG_TOKEN || !PUBLIC_URL || !WEBHOOK_SECRET) {
     console.log('Telegram webhook: отключён (нет PUBLIC_URL/WEBHOOK_SECRET/токена)');
