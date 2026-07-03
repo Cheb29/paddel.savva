@@ -224,6 +224,7 @@ tbody tr:hover .row-actions{opacity:1}
     <button class="nav-item" data-page="texts"><span class="icon">¶</span>Тексты</button>
     <button class="nav-item" data-page="media"><span class="icon">▶</span>Видео и медиа</button>
     <button class="nav-item" data-page="programs"><span class="icon">◈</span>Программы</button>
+    <button class="nav-item" data-page="schedule"><span class="icon">▤</span>Расписание</button>
     <button class="nav-item" data-page="prices"><span class="icon">₽</span>Цены</button>
     <button class="nav-item" data-page="testimonials"><span class="icon">"</span>Отзывы</button>
     <button class="nav-item" data-page="coaches"><span class="icon">★</span>Тренеры</button>
@@ -300,6 +301,7 @@ const SEED={
     {id:2,name:'Катита Леонова',role:'Junior Coach',eyebrow:'02 · Junior Coach',bio:'Смэш — это не просто удар. Это моя подпись. Моё «ало». Я люблю его не за грубую силу, а за ту самую секунду абсолютной власти над мячом — когда соперник кидает свечку в надежде отдышаться, и я слышу зов.',stat1_num:'9',stat1_label:'лет опыта',stat2_num:'P1',stat2_label:'рейтинг',stat3_num:'B/A',stat3_label:'уровень',photo:'uploads/Катита 1.PNG',photo2:'uploads/Катита 2.PNG',video:''},
     {id:3,name:'Елена Алешина',role:'Junior Coach',eyebrow:'03 · Junior Coach',bio:'Работает с детьми от 6 лет и начинающими взрослыми. Бывший игрок юниорской сборной. Главный принцип — игровой подход и развитие координации.',stat1_num:'7',stat1_label:'лет опыта',stat2_num:'6+',stat2_label:'возраст',stat3_num:'C/B',stat3_label:'уровень',photo:'uploads/Елена 1.PNG',photo2:'uploads/Елена 2.PNG',video:''},
   ],
+  schedule:{days:['ПН','ВТ','СР','ЧТ','ПТ'],rows:[]},
   texts:{
     hero_eyebrow:'Академия падел тенниса',
     hero_title:'БЬЁМ\nСИЛЬНО.\nРАСТЁМ.',
@@ -348,7 +350,7 @@ function loadStore(){
   try{const raw=localStorage.getItem(STORE_KEY);if(raw)s=JSON.parse(raw)}catch(e){}
   if(!s)s=JSON.parse(JSON.stringify(SEED));
   ['students','programs','prices','testimonials','coaches'].forEach(k=>{if(!Array.isArray(s[k]))s[k]=JSON.parse(JSON.stringify(SEED[k]||[]))});
-  ['texts','media'].forEach(k=>{if(!s[k]||typeof s[k]!=='object')s[k]=JSON.parse(JSON.stringify(SEED[k]||{}))});
+  ['texts','media','schedule'].forEach(k=>{if(!s[k]||typeof s[k]!=='object')s[k]=JSON.parse(JSON.stringify(SEED[k]||{}))});
   return s;
 }
 function saveStore(){localStorage.setItem(STORE_KEY,JSON.stringify(state));updateBadges()}
@@ -396,6 +398,7 @@ async function fetchLeadsAndStats(secret){
         'stat1_num','stat1_label','stat2_num','stat2_label','stat3_num','stat3_label'];
       fields.forEach(f=>{ const v=c['coach'+n+'_'+f]; if(v!=null) co[f]=v; });
     });
+    if(c.schedule_data){ try{ const s=JSON.parse(c.schedule_data); if(s&&Array.isArray(s.days)&&Array.isArray(s.rows)) state.schedule=s; }catch(e){} }
     saveStore();
   }
   return true;
@@ -445,7 +448,7 @@ function navigate(page){
   document.getElementById('sidebar').classList.remove('open');
   const c=document.getElementById('pageContent');
   c.innerHTML='';
-  ({dashboard:renderDashboard,inbox:renderInbox,students:renderStudents,texts:renderTexts,media:renderMedia,programs:renderPrograms,prices:renderPrices,testimonials:renderTestimonials,coaches:renderCoaches}[page]||renderDashboard)(c);
+  ({dashboard:renderDashboard,inbox:renderInbox,students:renderStudents,texts:renderTexts,media:renderMedia,programs:renderPrograms,prices:renderPrices,schedule:renderSchedule,testimonials:renderTestimonials,coaches:renderCoaches}[page]||renderDashboard)(c);
 }
 
 /* ============= TOAST ============= */
