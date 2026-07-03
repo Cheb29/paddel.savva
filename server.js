@@ -512,6 +512,24 @@ app.delete('/api/students/:id', requireSecret, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Coaches (Фаза 1) — тонкая таблица над слотами content ─────────────────────
+app.get('/api/coaches', requireSecret, (_req, res) => {
+  const rows = db.prepare("SELECT key, value FROM content WHERE key LIKE 'coach%name'").all();
+  const names = {};
+  rows.forEach(r => { const m = r.key.match(/^coach(\d)_name$/); if (m) names['coach' + m[1]] = r.value; });
+  const list = listCoaches.all().map(c => ({ slot: c.slot, name: names[c.slot] ?? '', telegram_chat_id: c.telegram_chat_id }));
+  res.json(list);
+});
+
+app.patch('/api/coaches/:slot', requireSecret, (req, res) => {
+  const slot = req.params.slot;
+  if (!getCoach.get(slot)) return res.status(404).json({ error: 'Тренер не найден' });
+  const raw = req.body?.telegram_chat_id;
+  const chat = (raw === null || raw === undefined || String(raw).trim() === '') ? null : String(raw).trim();
+  updateCoachChat.run(chat, slot);
+  res.json({ ok: true });
+});
+
 // ── GET /admin ─────────────────────────────────────────────────────────────────
 app.get('/admin', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
