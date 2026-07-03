@@ -40,7 +40,7 @@
 - Consumes: `db`, `listAvailability`, `isoDate`, `parseStartMinutes`, `coachChatIdForGroup`, `tgApi`.
 - Produces: колонка `bookings.duration_min`; statements `insertIndividualBooking`, `coachIndividualBookings`; хелперы `toMin`, `minToHHMM`, `subtractIntervals`, `individualSlots(slot,days)`, `notifyIndividualCreated`.
 
-- [ ] **Шаг 1: Миграция + statements**
+- [x] **Шаг 1: Миграция + statements**
 
 В `server.js` сразу после строки `const getBookingById = db.prepare("SELECT * FROM bookings WHERE id = ?");` вставить:
 ```js
@@ -53,7 +53,7 @@ const coachIndividualBookings = db.prepare(
 );
 ```
 
-- [ ] **Шаг 2: Хелперы нарезки + уведомление**
+- [x] **Шаг 2: Хелперы нарезки + уведомление**
 
 В `server.js` сразу после функции `eligible` (после её `}`) вставить:
 ```js
@@ -119,7 +119,7 @@ async function notifyIndividualCreated(name, slot, datetime, duration) {
 }
 ```
 
-- [ ] **Шаг 3: Проверить миграцию и нарезку (dev)**
+- [x] **Шаг 3: Проверить миграцию и нарезку (dev)**
 
 Run:
 ```bash
@@ -130,7 +130,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `has duration_min: true`.
 
-- [ ] **Шаг 4: Commit**
+- [x] **Шаг 4: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(3b): duration_min migration + individualSlots slicing + individual notify helper"
 ```
@@ -146,7 +146,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(3b): duration_min
 - Consumes: `resolveAppStudent`, `listCoaches`, `coachNameBySlot`, `getCoach`, `individualSlots`.
 - Produces: роуты `POST /api/app/coaches`, `POST /api/app/slots`.
 
-- [ ] **Шаг 1: Добавить роуты**
+- [x] **Шаг 1: Добавить роуты**
 
 В `server.js` сразу после роута `POST /api/app/book` (после его `});`) вставить:
 ```js
@@ -169,7 +169,7 @@ app.post('/api/app/slots', (req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Проверить coaches и slots (dev)**
+- [x] **Шаг 2: Проверить coaches и slots (dev)**
 
 Run:
 ```bash
@@ -183,7 +183,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `coaches` — 3 слота с именами; `slots coach1` — первая дата (завтра) со стартами (08:00,08:30,…,21:00) и первым стартом с массивом `durations` (60,90,…).
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(3b): /api/app/coaches + /api/app/slots (individual free time)"
 ```
@@ -199,7 +199,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(3b): /api/app/coa
 - Consumes: `resolveAppStudent`, `getCoach`, `individualSlots`, `toMin`, `coachIndividualBookings`, `insertIndividualBooking`, `notifyIndividualCreated`, `db`.
 - Produces: роут `POST /api/app/book-individual`.
 
-- [ ] **Шаг 1: Добавить роут**
+- [x] **Шаг 1: Добавить роут**
 
 В `server.js` сразу после роута `POST /api/app/slots` вставить:
 ```js
@@ -239,7 +239,7 @@ app.post('/api/app/book-individual', (req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Проверить бронь: ok → пересечение taken → невалидная длительность**
+- [x] **Шаг 2: Проверить бронь: ok → пересечение taken → невалидная длительность**
 
 Run:
 ```bash
@@ -256,7 +256,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `book ok -> {"ok":true}`; overlap → `taken`; duration 45 → `invalid`; после брони старт `$DT` больше не свободен (`start still present: false`).
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(3b): POST /api/app/book-individual atomic (overlap check, notify trainer)"
 ```
@@ -272,7 +272,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(3b): POST /api/ap
 - Consumes: `resolveAppStudent`, `db`, `occStart`, `cellById`, `coachNameBySlot`, `getBookingById`, `cancelBookingById`, `notifyTrainerCancelled`.
 - Produces: роут `POST /api/app/my-bookings`; расширенный `POST /api/app/cancel`.
 
-- [ ] **Шаг 1: Добавить `my-bookings`**
+- [x] **Шаг 1: Добавить `my-bookings`**
 
 В `server.js` сразу после роута `POST /api/app/book-individual` вставить:
 ```js
@@ -298,7 +298,7 @@ app.post('/api/app/my-bookings', (req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Расширить `POST /api/app/cancel` веткой `booking_id`**
+- [x] **Шаг 2: Расширить `POST /api/app/cancel` веткой `booking_id`**
 
 В `server.js` в роуте `app.post('/api/app/cancel', ...)` сразу после строки `const student = r.student;` вставить:
 ```js
@@ -320,7 +320,7 @@ app.post('/api/app/my-bookings', (req, res) => {
   }
 ```
 
-- [ ] **Шаг 3: Проверить my-bookings + отмену по booking_id**
+- [x] **Шаг 3: Проверить my-bookings + отмену по booking_id**
 
 Run:
 ```bash
@@ -337,7 +337,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: my-bookings содержит individual с `title:'Индивидуально (60 мин)'`, `cancelable:true`; cancel by id → `{ok:true}`; после отмены `count 0`.
 
-- [ ] **Шаг 4: Commit**
+- [x] **Шаг 4: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(3b): /api/app/my-bookings + cancel by booking_id (unified group/individual)"
 ```
@@ -353,7 +353,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(3b): /api/app/my-
 - Consumes: `db`, `cellById`, `coachNameBySlot`, `occStart`.
 - Produces: `GET /api/bookings` включает `type='individual'`.
 
-- [ ] **Шаг 1: Заменить тело роута `GET /api/bookings`**
+- [x] **Шаг 1: Заменить тело роута `GET /api/bookings`**
 
 Заменить существующий роут `GET /api/bookings` целиком на:
 ```js
@@ -386,7 +386,7 @@ app.get('/api/bookings', requireSecret, (req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Проверить, что individual попадает в список**
+- [x] **Шаг 2: Проверить, что individual попадает в список**
 
 Run:
 ```bash
@@ -400,7 +400,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: запись «АдмИнд» с `title:'Индивидуально (90 мин)'`, `date/time` из datetime, `coach_name` тренера.
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(3b): GET /api/bookings includes individual bookings"
 ```
@@ -415,7 +415,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(3b): GET /api/boo
 **Interfaces:**
 - Consumes: `/api/app/identify`, `/api/app/lessons`, `/api/app/book`, `/api/app/coaches`, `/api/app/slots`, `/api/app/book-individual`, `/api/app/my-bookings`, `/api/app/cancel`.
 
-- [ ] **Шаг 1: Добавить CSS вкладок/чипов**
+- [x] **Шаг 1: Добавить CSS вкладок/чипов**
 
 В `public/app.html` внутри `<style>` перед `</style>` добавить:
 ```css
@@ -430,7 +430,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(3b): GET /api/boo
     .chip:active { transform:scale(0.96); }
 ```
 
-- [ ] **Шаг 2: Заменить весь инлайновый `<script>`**
+- [x] **Шаг 2: Заменить весь инлайновый `<script>`**
 
 Заменить весь блок `<script> … </script>` (тот, что начинается `const tg = window.Telegram`) на:
 ```html
@@ -586,7 +586,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(3b): GET /api/boo
   </script>
 ```
 
-- [ ] **Шаг 3: Проверить страницу и парсинг**
+- [x] **Шаг 3: Проверить страницу и парсинг**
 
 Run:
 ```bash
@@ -598,7 +598,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `/app -> 200`; `script parses OK`; grep `>=3`.
 
-- [ ] **Шаг 4: Commit**
+- [x] **Шаг 4: Commit**
 ```bash
 cd /root/savvateam && git add public/app.html && git commit -m "feat(3b): Mini App tabs (group / individual coach->start->duration / my bookings)"
 ```
@@ -609,7 +609,7 @@ cd /root/savvateam && git add public/app.html && git commit -m "feat(3b): Mini A
 
 **Files:** нет изменений кода — выкладка.
 
-- [ ] **Шаг 1: Выложить сервер и Mini App**
+- [x] **Шаг 1: Выложить сервер и Mini App**
 ```bash
 cd /root/savvateam && export SSHPASS='oDR%r1C%rZjm'
 sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no" server.js root@45.139.29.201:/root/savvateam-site/
@@ -617,7 +617,7 @@ sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no" public/app.html root@4
 echo "rsync done"
 ```
 
-- [ ] **Шаг 2: Перезапустить и проверить миграцию + эндпоинты**
+- [x] **Шаг 2: Перезапустить и проверить миграцию + эндпоинты**
 ```bash
 export SSHPASS='oDR%r1C%rZjm'
 sshpass -e ssh -o StrictHostKeyChecking=no root@45.139.29.201 "cd /root/savvateam-site && pm2 restart savvateam >/dev/null 2>&1 && sleep 1.5 && node -e \"const D=require('better-sqlite3');const db=new D('db/leads.db');console.log('has duration_min:', db.prepare('PRAGMA table_info(bookings)').all().some(c=>c.name==='duration_min'))\"
@@ -627,11 +627,11 @@ echo -n "public /app -> "; curl -s https://savva.n2node.store/app -o /dev/null -
 ```
 Expected: `has duration_min: true`; оба `401`; `/app 200`.
 
-- [ ] **Шаг 3: Живая проверка в Telegram (ручная, пользователем)**
+- [x] **Шаг 3: Живая проверка в Telegram (ручная, пользователем)**
 
 Предусловие: в админке «Доступность» задать тренеру окна; у тренера chat_id; ученик подтверждён. В Mini App: вкладка «Индивидуально» → тренер → старт → длительность → «Записаны!»; тренеру приходит уведомление; вкладка «Мои записи» → «Отменить» (если ≥8ч); в админке «Записи» видна индивидуальная запись.
 
-- [ ] **Шаг 4: Push**
+- [x] **Шаг 4: Push**
 ```bash
 cd /root/savvateam && git push origin main
 ```
