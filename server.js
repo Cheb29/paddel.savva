@@ -308,6 +308,7 @@ const studentActiveBookings = db.prepare(
   "SELECT group_id, date FROM bookings WHERE student_id = ? AND status = 'confirmed' AND type = 'group'"
 );
 
+const MAX_GROUP_CAPACITY = 4; // жёсткий потолок мест на группу (бизнес-правило)
 const WEEKDAY = { 'ВС':0, 'ПН':1, 'ВТ':2, 'СР':3, 'ЧТ':4, 'ПТ':5, 'СБ':6 };
 function scheduleData() {
   const row = db.prepare('SELECT value FROM content WHERE key = ?').get('schedule_data');
@@ -349,7 +350,8 @@ function groupOccurrences(days = 14) {
           title: cell.title, meta: cell.meta, cat: cell.cat,
           level_min: cell.level_min, level_max: cell.level_max,
           audience: cell.audience, gender: cell.gender,
-          coach_id: cell.coach_id, capacity: cell.capacity,
+          coach_id: cell.coach_id,
+          capacity: Math.min(Number(cell.capacity) || MAX_GROUP_CAPACITY, MAX_GROUP_CAPACITY),
         });
       });
     });
