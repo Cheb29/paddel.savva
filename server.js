@@ -906,11 +906,98 @@ app.post('/api/app/book', (req, res) => {
   }
 });
 
+app.post('/api/app/coaches', (req, res) => {
+  const r = resolveAppStudent(req.body || {});
+  if (r.code === 401) return res.status(401).json({ error: r.error });
+  if (r.status) return res.json({ status: r.status });
+  const coaches = listCoaches.all().map(c => ({ slot: c.slot, name: coachNameBySlot(c.slot) }));
+  res.json({ status: 'ok', coaches });
+});
+
+app.post('/api/app/slots', (req, res) => {
+  const r = resolveAppStudent(req.body || {});
+  if (r.code === 401) return res.status(401).json({ error: r.error });
+  if (r.status) return res.json({ status: r.status });
+  const slot = String((req.body && req.body.slot) || '');
+  if (!getCoach.get(slot)) return res.json({ error: 'no_coach' });
+  res.json({ status: 'ok', dates: individualSlots(slot, 14) });
+});
+
+app.post('/api/app/book-individual', (req, res) => {
+  const r = resolveAppStudent(req.body || {});
+  if (r.code === 401) return res.status(401).json({ error: r.error });
+  if (r.status) return res.json({ status: r.status });
+  const student = r.student;
+  const slot = String((req.body && req.body.slot) || '');
+  const datetime = String((req.body && req.body.datetime) || '');
+  const duration = Number(req.body && req.body.duration_min);
+  if (!getCoach.get(slot)) return res.json({ error: 'no_coach' });
+  if (!Number.isInteger(duration) || duration < 60 || duration % 30 !== 0) return res.json({ error: 'invalid' });
+  const dateIso = datetime.slice(0, 10);
+  const dayEntry = individualSlots(slot, 14).find(x => x.date === dateIso);
+  const startEntry = dayEntry && dayEntry.starts.find(s => s.datetime === datetime);
+  if (!startEntry) return res.json({ error: 'expired' });
+  if (!startEntry.durations.includes(duration)) return res.json({ error: 'invalid' });
+  const startMin = toMin(datetime.slice(11));
+  try {
+    db.transaction(() => {
+      const conflicts = coachIndividualBookings.all(slot).filter(b => b.datetime && b.datetime.slice(0, 10) === dateIso);
+      for (const b of conflicts) {
+        const bs = toMin(b.datetime.slice(11)), be = bs + (b.duration_min || 0);
+        if (startMin < be && startMin + duration > bs) throw new Error('taken');
+      }
+      insertIndividualBooking.run(student.id, slot, datetime, duration);
+    })();
+    notifyIndividualCreated(student.name, slot, datetime, duration).catch(() => {});
+    res.json({ ok: true });
+  } catch (e) {
+    const msg = e && e.message ? String(e.message) : '';
+    if (msg === 'taken') return res.json({ error: 'taken' });
+    return res.status(500).json({ error: 'server' });
+  }
+});
+
+app.post('/api/app/my-bookings', (req, res) => {
+  const r = resolveAppStudent(req.body || {});
+  if (r.code === 401) return res.status(401).json({ error: r.error });
+  if (r.status) return res.json({ status: r.status });
+  const now = Date.now();
+  const rows = db.prepare("SELECT * FROM bookings WHERE student_id = ? AND status = 'confirmed'").all(r.student.id);
+  const items = rows.map(b => {
+    if (b.type === 'individual') {
+      const startMs = occStart(b.datetime.slice(0, 10), b.datetime.slice(11)).getTime();
+      return { booking_id: b.id, kind: 'individual', title: 'Индивидуально (' + (b.duration_min || '?') + ' мин)', when: b.datetime, coach_name: coachNameBySlot(b.coach_id || ''), startMs };
+    }
+    const cell = cellById(b.group_id) || {};
+    const time = b.time || cell.time || '';
+    return { booking_id: b.id, kind: 'group', title: b.title || cell.title || '(группа)', when: (b.date || '') + ' ' + time, coach_name: coachNameBySlot(b.coach_id || cell.coach_id || ''), startMs: occStart(b.date, time).getTime() };
+  }).filter(x => x.startMs > now)
+    .sort((a, b) => a.startMs - b.startMs)
+    .map(x => ({ booking_id: x.booking_id, kind: x.kind, title: x.title, when: x.when, coach_name: x.coach_name, cancelable: x.startMs - now >= 8 * 3600 * 1000 }));
+  res.json({ status: 'ok', bookings: items });
+});
+
 app.post('/api/app/cancel', (req, res) => {
   const r = resolveAppStudent(req.body || {});
   if (r.code === 401) return res.status(401).json({ error: r.error });
   if (r.status) return res.json({ status: r.status });
   const student = r.student;
+  if (req.body && req.body.booking_id != null) {
+    const b = getBookingById.get(Number(req.body.booking_id));
+    if (!b || b.status !== 'confirmed') return res.json({ error: 'not_found' });
+    if (b.student_id !== student.id) return res.json({ error: 'forbidden' });
+    const gcell = b.type === 'group' ? (cellById(b.group_id) || {}) : {};
+    const startMs = b.type === 'individual'
+      ? occStart(b.datetime.slice(0, 10), b.datetime.slice(11)).getTime()
+      : occStart(b.date, b.time || gcell.time).getTime();
+    if (startMs - Date.now() < 8 * 3600 * 1000) return res.json({ error: 'too_late' });
+    cancelBookingById.run(b.id);
+    const norm = b.type === 'individual'
+      ? { coach_id: b.coach_id, title: 'Индивидуально (' + (b.duration_min || '') + ' мин)', date: b.datetime.slice(0, 10), time: b.datetime.slice(11) }
+      : { coach_id: b.coach_id || gcell.coach_id, title: b.title || gcell.title, date: b.date, time: b.time || gcell.time };
+    notifyTrainerCancelled(student.name, norm).catch(() => {});
+    return res.json({ ok: true });
+  }
   const group_id = String((req.body && req.body.group_id) || '');
   const date = String((req.body && req.body.date) || '');
   const b = getActiveBooking.get(student.id, group_id, date);
