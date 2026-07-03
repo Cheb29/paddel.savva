@@ -610,6 +610,10 @@ app.get('/admin', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+app.get('/app', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'app.html'));
+});
+
 // ── SPA fallback ───────────────────────────────────────────────────────────────
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
