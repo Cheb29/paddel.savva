@@ -1980,56 +1980,10 @@ function closeMenu(){
   <div class="section-inner">
     <div class="section-label reveal" data-content="schedule_label">Расписание</div>
     <h2 class="section-title reveal reveal-delay-1" data-content="schedule_title" data-content-html>КАЖДЫЙ<br>ДЕНЬ</h2>
-    <div class="schedule-grid reveal reveal-delay-2">
-      <div class="day-col">
-        <div class="day-header"><div class="day-name">ПН</div></div>
-        <div class="day-slot has-class"><div class="slot-time">09:00</div><div class="slot-name">Старт</div><div class="slot-level">Начин.</div></div>
-        <div class="day-slot"></div>
-        <div class="day-slot has-class"><div class="slot-time">18:00</div><div class="slot-name">Прогресс</div><div class="slot-level">Средн.</div></div>
-        <div class="day-slot has-class"><div class="slot-time">20:00</div><div class="slot-name">Элита</div><div class="slot-level">Проф.</div></div>
-      </div>
-      <div class="day-col">
-        <div class="day-header"><div class="day-name">ВТ</div></div>
-        <div class="day-slot"></div>
-        <div class="day-slot has-class"><div class="slot-time">11:00</div><div class="slot-name">Прогресс</div><div class="slot-level">Средн.</div></div>
-        <div class="day-slot has-class"><div class="slot-time">17:00</div><div class="slot-name">Старт</div><div class="slot-level">Начин.</div></div>
-        <div class="day-slot has-class"><div class="slot-time">20:00</div><div class="slot-name">Элита</div><div class="slot-level">Проф.</div></div>
-      </div>
-      <div class="day-col">
-        <div class="day-header"><div class="day-name">СР</div></div>
-        <div class="day-slot has-class"><div class="slot-time">09:00</div><div class="slot-name">Элита</div><div class="slot-level">Проф.</div></div>
-        <div class="day-slot"></div>
-        <div class="day-slot has-class"><div class="slot-time">18:00</div><div class="slot-name">Старт</div><div class="slot-level">Начин.</div></div>
-        <div class="day-slot has-class"><div class="slot-time">20:00</div><div class="slot-name">Прогресс</div><div class="slot-level">Средн.</div></div>
-      </div>
-      <div class="day-col">
-        <div class="day-header"><div class="day-name">ЧТ</div></div>
-        <div class="day-slot"></div>
-        <div class="day-slot has-class"><div class="slot-time">12:00</div><div class="slot-name">Прогресс</div><div class="slot-level">Средн.</div></div>
-        <div class="day-slot has-class"><div class="slot-time">17:00</div><div class="slot-name">Старт</div><div class="slot-level">Начин.</div></div>
-        <div class="day-slot has-class"><div class="slot-time">19:00</div><div class="slot-name">Элита</div><div class="slot-level">Проф.</div></div>
-      </div>
-      <div class="day-col">
-        <div class="day-header"><div class="day-name">ПТ</div></div>
-        <div class="day-slot has-class"><div class="slot-time">09:00</div><div class="slot-name">Старт</div><div class="slot-level">Начин.</div></div>
-        <div class="day-slot has-class"><div class="slot-time">11:00</div><div class="slot-name">Элита</div><div class="slot-level">Проф.</div></div>
-        <div class="day-slot"></div>
-        <div class="day-slot has-class"><div class="slot-time">20:00</div><div class="slot-name">Прогресс</div><div class="slot-level">Средн.</div></div>
-      </div>
-      <div class="day-col">
-        <div class="day-header"><div class="day-name">СБ</div></div>
-        <div class="day-slot has-class"><div class="slot-time">10:00</div><div class="slot-name">Старт</div><div class="slot-level">Начин.</div></div>
-        <div class="day-slot has-class"><div class="slot-time">12:00</div><div class="slot-name">Прогресс</div><div class="slot-level">Средн.</div></div>
-        <div class="day-slot has-class"><div class="slot-time">14:00</div><div class="slot-name">Элита</div><div class="slot-level">Проф.</div></div>
-        <div class="day-slot"></div>
-      </div>
-      <div class="day-col">
-        <div class="day-header"><div class="day-name">ВС</div></div>
-        <div class="day-slot has-class"><div class="slot-time">10:00</div><div class="slot-name">Старт</div><div class="slot-level">Начин.</div></div>
-        <div class="day-slot has-class"><div class="slot-time">12:00</div><div class="slot-name">Прогресс</div><div class="slot-level">Средн.</div></div>
-        <div class="day-slot"></div>
-        <div class="day-slot"></div>
-      </div>
+    <div class="sch-wrap reveal reveal-delay-2">
+      <div class="sch-grid" id="schedule-grid"></div>
+      <div class="sch-mobile" id="schedule-mobile"></div>
+      <div class="sch-legend" id="schedule-legend"></div>
     </div>
   </div>
 </section>
