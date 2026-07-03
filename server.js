@@ -1014,16 +1014,24 @@ app.post('/api/app/cancel', (req, res) => {
 app.get('/api/bookings', requireSecret, (req, res) => {
   const scope = req.query.scope === 'all' ? 'all' : 'future';
   const rows = db.prepare(
-    "SELECT b.*, s.name AS student_name FROM bookings b LEFT JOIN students s ON s.id = b.student_id WHERE b.type = 'group' ORDER BY b.date, b.time"
+    "SELECT b.*, s.name AS student_name FROM bookings b LEFT JOIN students s ON s.id = b.student_id WHERE b.type IN ('group','individual') ORDER BY b.date, b.datetime, b.time"
   ).all();
   const now = Date.now();
   const out = rows.map(b => {
+    if (b.type === 'individual') {
+      const date = (b.datetime || '').slice(0, 10), time = (b.datetime || '').slice(11);
+      return {
+        id: b.id, student_id: b.student_id, student_name: b.student_name || '—',
+        group_id: null, date, time, title: 'Индивидуально (' + (b.duration_min || '?') + ' мин)',
+        coach_name: coachNameBySlot(b.coach_id || ''), status: b.status, created_at: b.created_at,
+      };
+    }
     const cell = cellById(b.group_id) || {};
     const title = b.title || cell.title || '(группа изменена)';
     const time = b.time || cell.time || '';
     return {
       id: b.id, student_id: b.student_id, student_name: b.student_name || '—',
-      group_id: b.group_id, date: b.date, title, time,
+      group_id: b.group_id, date: b.date, time, title,
       coach_name: coachNameBySlot(b.coach_id || cell.coach_id || ''),
       status: b.status, created_at: b.created_at,
     };
