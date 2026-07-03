@@ -47,7 +47,7 @@
 **Interfaces:**
 - Produces: ключ `schedule_data` (JSON-строка формы `{days:[5], rows:[{time, cells:[5 × (cell|null)]}]}`) в ответе `GET /api/content`.
 
-- [ ] **Шаг 1: Добавить ключ `schedule_data` в `CONTENT_DEFAULTS`**
+- [x] **Шаг 1: Добавить ключ `schedule_data` в `CONTENT_DEFAULTS`**
 
 В `server.js` сразу после строки `  coach3_video:      '',` (строка 145) вставить:
 
@@ -96,7 +96,7 @@
   }),
 ```
 
-- [ ] **Шаг 2: Проверить, что сервер стартует и отдаёт корректный ключ**
+- [x] **Шаг 2: Проверить, что сервер стартует и отдаёт корректный ключ**
 
 Run (локально, порт 3000):
 ```bash
@@ -106,7 +106,7 @@ kill $SRV)
 ```
 Expected: `days: 5 rows: 7 row0 cells: 5 cells with id: 25 all have coach/level: true`
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(schedule): seed schedule_data default with extended cell model"
 ```
@@ -121,7 +121,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(schedule): seed s
 **Interfaces:**
 - Produces: классы `.sch-wrap`, `.sch-grid`, `.sch-head`, `.sch-time`, `.sch-cell`, `.sch-empty`, `.sch-card` (+ `.women/.men/.kids/.mixed/.extreme`), `.sch-card .t`, `.sch-card .m`, `.sch-legend`, `.sch-legend-item`, `.sch-dot` (+ `.warm`), `.sch-mobile`, `.sch-mday`.
 
-- [ ] **Шаг 1: Заменить блок стилей расписания**
+- [x] **Шаг 1: Заменить блок стилей расписания**
 
 Удалить строки 777–827 (от `    #schedule { background: var(--bg2); }` до строки `    .slot-level {` и её тела, заканчивая `      margin-top: 2px;\n    }`) и вставить:
 
@@ -258,14 +258,14 @@ cd /root/savvateam && git add server.js && git commit -m "feat(schedule): seed s
     }
 ```
 
-- [ ] **Шаг 2: Удалить старое мобильное правило на строке 1507**
+- [x] **Шаг 2: Удалить старое мобильное правило на строке 1507**
 
 Найти и удалить строку:
 ```css
       .schedule-grid { grid-template-columns: repeat(7, minmax(110px, 1fr)); overflow-x: auto; }
 ```
 
-- [ ] **Шаг 3: Удалить старый мобильный блок расписания (строки 1616–1625)**
+- [x] **Шаг 3: Удалить старый мобильный блок расписания (строки 1616–1625)**
 
 Найти и удалить блок:
 ```css
@@ -281,7 +281,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(schedule): seed s
       .schedule-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 ```
 
-- [ ] **Шаг 4: Проверить, что старые классы расписания больше не встречаются в CSS**
+- [x] **Шаг 4: Проверить, что старые классы расписания больше не встречаются в CSS**
 
 Run:
 ```bash
@@ -289,7 +289,7 @@ cd /root/savvateam && grep -c "\.schedule-grid\|\.day-col\|\.day-slot\|\.slot-ti
 ```
 Expected: старые CSS-селекторы удалены. Ненулевой результат допустим ТОЛЬКО если это HTML-разметка (её убирает Task 3) — на этом шаге ожидаем совпадения только из ещё не тронутой разметки строк 1915–1965 (≈8 упоминаний в HTML). CSS-определений (`.day-col {`, `.slot-time {` и т.п.) быть не должно — проверить глазами в git diff, что удалён именно блок стилей.
 
-- [ ] **Шаг 5: Commit**
+- [x] **Шаг 5: Commit**
 ```bash
 cd /root/savvateam && git add public/index.html && git commit -m "feat(schedule): new grid + mobile CSS on landing (reference-based)"
 ```
@@ -305,7 +305,7 @@ cd /root/savvateam && git add public/index.html && git commit -m "feat(schedule)
 - Consumes: классы из Task 2.
 - Produces: DOM-узлы `#schedule-grid`, `#schedule-mobile`, `#schedule-legend` для наполнения из JS (Task 4).
 
-- [ ] **Шаг 1: Заменить разметку сетки**
+- [x] **Шаг 1: Заменить разметку сетки**
 
 Заменить весь блок строк 1915–1965 (от `    <div class="schedule-grid reveal reveal-delay-2">` до соответствующего закрывающего `    </div>` на строке 1965 включительно — семь `.day-col`) на:
 
@@ -319,7 +319,7 @@ cd /root/savvateam && git add public/index.html && git commit -m "feat(schedule)
 
 Строки `<div class="section-label" … data-content="schedule_label">` (1913) и `<h2 … data-content="schedule_title">` (1914) НЕ трогать.
 
-- [ ] **Шаг 2: Проверить, что старая разметка удалена**
+- [x] **Шаг 2: Проверить, что старая разметка удалена**
 
 Run:
 ```bash
@@ -327,7 +327,7 @@ cd /root/savvateam && grep -c 'class="schedule-grid"\|class="day-col"\|class="da
 ```
 Expected: `0`
 
-- [ ] **Шаг 3: Проверить наличие новых контейнеров**
+- [x] **Шаг 3: Проверить наличие новых контейнеров**
 
 Run:
 ```bash
@@ -335,7 +335,7 @@ cd /root/savvateam && grep -c 'id="schedule-grid"\|id="schedule-mobile"\|id="sch
 ```
 Expected: `3`
 
-- [ ] **Шаг 4: Commit**
+- [x] **Шаг 4: Commit**
 ```bash
 cd /root/savvateam && git add public/index.html && git commit -m "feat(schedule): replace hardcoded grid markup with containers"
 ```
@@ -351,14 +351,14 @@ cd /root/savvateam && git add public/index.html && git commit -m "feat(schedule)
 - Consumes: `c.schedule_data` (JSON-строка) из `/api/content`; контейнеры `#schedule-grid`, `#schedule-mobile`, `#schedule-legend`; `#contact`, `#contactComment`.
 - Produces: глобальная функция `renderSchedule(c)`.
 
-- [ ] **Шаг 1: Добавить вызов рендера в IIFE**
+- [x] **Шаг 1: Добавить вызов рендера в IIFE**
 
 В IIFE, на строке 2539 сразу перед `    loadVideos(c);`, вставить строку:
 ```js
     renderSchedule(c);
 ```
 
-- [ ] **Шаг 2: Добавить функцию `renderSchedule`**
+- [x] **Шаг 2: Добавить функцию `renderSchedule`**
 
 Сразу после `})();` (строка 2541, закрытие IIFE), в том же `<script>`, добавить:
 
@@ -441,22 +441,22 @@ function renderSchedule(c) {
 }
 ```
 
-- [ ] **Шаг 3: Запустить локально и проверить в браузере (десктоп)**
+- [x] **Шаг 3: Запустить локально и проверить в браузере (десктоп)**
 
 Run: `cd /root/savvateam && node server.js`, открыть `http://localhost:3000/#schedule`.
 Expected: сетка «Время + 5 дней (ПН–ПТ)» отрисована; карточки с цветными полосками (женские зелёные, мужские тёплые, extreme со свечением); легенда снизу. Клик по карточке → скролл к форме, в поле «комментарий» текст вида `Запись: Девушки 1,5–2 · ПН 9:30–11:00`. Полей допуска (уровень/пол/тренер/вместимость) на карточке НЕТ.
 
-- [ ] **Шаг 4: Проверить мобильную раскладку**
+- [x] **Шаг 4: Проверить мобильную раскладку**
 
 В DevTools включить мобильный вьюпорт (≤760px), обновить `#schedule`.
 Expected: сетка-грид скрыта, показан вертикальный список с заголовками дней (`ПН`, `ВТ`, …) и карточками под каждым днём; пустых ячеек нет.
 
-- [ ] **Шаг 5: Проверить fallback при битом JSON**
+- [x] **Шаг 5: Проверить fallback при битом JSON**
 
 В DevTools Console: `renderSchedule({schedule_data:'{bad'})` — без исключений (функция тихо выходит).
 Expected: ошибок в консоли нет. Остановить сервер (`Ctrl+C`).
 
-- [ ] **Шаг 6: Commit**
+- [x] **Шаг 6: Commit**
 ```bash
 cd /root/savvateam && git add public/index.html && git commit -m "feat(schedule): render grid + mobile list from schedule_data + click-to-book"
 ```
@@ -472,21 +472,21 @@ cd /root/savvateam && git add public/index.html && git commit -m "feat(schedule)
 - Consumes: `state`, `/api/content`.
 - Produces: `state.schedule` (объект `{days:[…], rows:[…]}`); зарегистрированная страница `schedule` в роутере (обработчик `renderSchedule` реализуется в Task 6).
 
-- [ ] **Шаг 1: Пункт меню в сайдбаре**
+- [x] **Шаг 1: Пункт меню в сайдбаре**
 
 После строки 226 (`    <button class="nav-item" data-page="programs"><span class="icon">◈</span>Программы</button>`) вставить:
 ```html
     <button class="nav-item" data-page="schedule"><span class="icon">▤</span>Расписание</button>
 ```
 
-- [ ] **Шаг 2: Дефолт `schedule` в `SEED`**
+- [x] **Шаг 2: Дефолт `schedule` в `SEED`**
 
 В объекте `SEED` (начинается на строке 272), сразу после закрывающей `],` массива `coaches` (перед `  texts:{`) вставить:
 ```js
   schedule:{days:['ПН','ВТ','СР','ЧТ','ПТ'],rows:[]},
 ```
 
-- [ ] **Шаг 3: Нормализация `schedule` в `loadStore`**
+- [x] **Шаг 3: Нормализация `schedule` в `loadStore`**
 
 В функции `loadStore` найти строку:
 ```js
@@ -497,21 +497,21 @@ cd /root/savvateam && git add public/index.html && git commit -m "feat(schedule)
   ['texts','media','schedule'].forEach(k=>{if(!s[k]||typeof s[k]!=='object')s[k]=JSON.parse(JSON.stringify(SEED[k]||{}))});
 ```
 
-- [ ] **Шаг 4: Мерж `schedule_data` с сервера в `fetchLeadsAndStats`**
+- [x] **Шаг 4: Мерж `schedule_data` с сервера в `fetchLeadsAndStats`**
 
 В `fetchLeadsAndStats`, внутри `if(contentRes.ok){ … }`, сразу перед `    saveStore();` (строка 399) вставить:
 ```js
     if(c.schedule_data){ try{ const s=JSON.parse(c.schedule_data); if(s&&Array.isArray(s.days)&&Array.isArray(s.rows)) state.schedule=s; }catch(e){} }
 ```
 
-- [ ] **Шаг 5: Зарегистрировать страницу в `navigate()`**
+- [x] **Шаг 5: Зарегистрировать страницу в `navigate()`**
 
 На строке 448 в объекте-роутере `({dashboard:renderDashboard, … ,coaches:renderCoaches}[page]||renderDashboard)(c);` добавить `schedule:renderSchedule,` (например, сразу после `prices:renderPrices,`):
 ```js
   ({dashboard:renderDashboard,inbox:renderInbox,students:renderStudents,texts:renderTexts,media:renderMedia,programs:renderPrograms,prices:renderPrices,schedule:renderSchedule,testimonials:renderTestimonials,coaches:renderCoaches}[page]||renderDashboard)(c);
 ```
 
-- [ ] **Шаг 6: Проверить синтаксис JS админки**
+- [x] **Шаг 6: Проверить синтаксис JS админки**
 
 > Примечание: `renderSchedule` пока не определён (появится в Task 6) — при клике на пункт меню будет ReferenceError. Это ожидаемо до Task 6; на этом шаге проверяем только парсинг файла и отсутствие битых скобок в самом `<script>`. Извлекаем и синтаксически валидируем инлайновый скрипт:
 
@@ -521,7 +521,7 @@ cd /root/savvateam && node -e "const h=require('fs').readFileSync('public/admin.
 ```
 Expected: `admin script parses OK` (одиночное упоминание `renderSchedule` как идентификатора не мешает парсингу).
 
-- [ ] **Шаг 7: Commit**
+- [x] **Шаг 7: Commit**
 ```bash
 cd /root/savvateam && git add public/admin.html && git commit -m "feat(schedule): admin menu, route, state default and content merge"
 ```
@@ -537,7 +537,7 @@ cd /root/savvateam && git add public/admin.html && git commit -m "feat(schedule)
 - Consumes: `state.schedule` (Task 5), `state.coaches` (имена тренеров), `adminSecret`, `toast()`, `escapeHtml()`, `escapeAttr()`, `saveStore()`, `/api/content`.
 - Produces: `renderSchedule(c)`, `collectSchedule()`, `addSchRow()`, `delSchRow(i)`, `addSchDay()`, `delSchDay()`, `toggleSchCell(ri,ci)`, `genSchId()`, `saveSchedule()`.
 
-- [ ] **Шаг 1: Добавить функции редактора**
+- [x] **Шаг 1: Добавить функции редактора**
 
 Непосредственно перед строкой 817 (`/* ============= TESTIMONIALS ============= */`) вставить:
 
@@ -618,7 +618,7 @@ async function saveSchedule(){
 }
 ```
 
-- [ ] **Шаг 2: Проверить, что скрипт админки парсится и `renderSchedule` определён**
+- [x] **Шаг 2: Проверить, что скрипт админки парсится и `renderSchedule` определён**
 
 Run:
 ```bash
@@ -626,7 +626,7 @@ cd /root/savvateam && node -e "const h=require('fs').readFileSync('public/admin.
 ```
 Expected: `admin editor OK`
 
-- [ ] **Шаг 3: Проверить сохранение end-to-end (локально)**
+- [x] **Шаг 3: Проверить сохранение end-to-end (локально)**
 
 Run: `cd /root/savvateam && node server.js`. Открыть `http://localhost:3000/admin`, войти (значение `ADMIN_SECRET`, по умолчанию см. `server.js`/`.env`), меню «Расписание» → раскрыть «Допуск ▾» у ячейки → изменить название/уровень/тренера → «Сохранить и опубликовать» (toast «Расписание опубликовано»). Затем:
 ```bash
@@ -634,7 +634,7 @@ cd /root/savvateam && curl -s localhost:3000/api/content | node -e "let d='';pro
 ```
 Expected: изменения сохранены; `all keep id: true` (стабильные id не потеряны). Открыть `http://localhost:3000/#schedule` → изменения видны на витрине. Остановить сервер.
 
-- [ ] **Шаг 4: Commit**
+- [x] **Шаг 4: Commit**
 ```bash
 cd /root/savvateam && git add public/admin.html && git commit -m "feat(schedule): admin editor with collapsible admission block and publish"
 ```
@@ -645,22 +645,22 @@ cd /root/savvateam && git add public/admin.html && git commit -m "feat(schedule)
 
 **Files:** нет изменений кода — только выкладка.
 
-- [ ] **Шаг 1: Выложить статику и сервер на прод**
+- [x] **Шаг 1: Выложить статику и сервер на прод**
 ```bash
 cd /root/savvateam && SSHPASS='oDR%r1C%rZjm' sshpass -p "$SSHPASS" rsync -az -e "ssh -o StrictHostKeyChecking=no" server.js public/index.html public/admin.html root@45.139.29.201:/root/savvateam-site/
 ```
 
-- [ ] **Шаг 2: Перезапустить сервер и убедиться, что ключ засеян**
+- [x] **Шаг 2: Перезапустить сервер и убедиться, что ключ засеян**
 ```bash
 SSHPASS='oDR%r1C%rZjm' sshpass -p "$SSHPASS" ssh -o StrictHostKeyChecking=no root@45.139.29.201 "cd /root/savvateam-site && pm2 restart savvateam && sleep 1 && curl -s localhost:3002/api/content | node -e \"let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log('schedule_data rows:',JSON.parse(j.schedule_data).rows.length)})\""
 ```
 Expected: `schedule_data rows: 7` (либо число строк после ваших правок, если контент уже редактировался в БД прода).
 
-- [ ] **Шаг 3: Проверить прод в браузере**
+- [x] **Шаг 3: Проверить прод в браузере**
 
 Открыть `https://savva.n2node.store/#schedule` — сетка на 5 дней, клик по карточке ведёт к форме с предзаполнением; мобильный вид — список по дням. Открыть `https://savva.n2node.store/admin` → «Расписание» → правка сохраняется и видна на витрине.
 
-- [ ] **Шаг 4: Push в репозиторий**
+- [x] **Шаг 4: Push в репозиторий**
 ```bash
 cd /root/savvateam && git push origin main
 ```
