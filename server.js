@@ -5,6 +5,7 @@ import multer from 'multer';
 import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
+import { createHmac } from 'crypto';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -12,6 +13,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const TG_CHAT = process.env.TELEGRAM_CHAT_ID || '';
+const PUBLIC_URL = process.env.PUBLIC_URL || '';
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || '';
+const MANAGER_USERNAME = process.env.MANAGER_USERNAME || '';
+const DEV_ALLOW_UNSIGNED = process.env.DEV_ALLOW_UNSIGNED === '1';
 
 // ── Uploads ───────────────────────────────────────────────────────────────────
 const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
@@ -235,21 +240,47 @@ const deleteStudentStmt = db.prepare('DELETE FROM students WHERE id = ?');
 
 const seedCoach = db.prepare('INSERT OR IGNORE INTO coaches (slot) VALUES (?)');
 ['coach1','coach2','coach3'].forEach(s => seedCoach.run(s));
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS tg_sessions (
+    telegram_user_id INTEGER PRIMARY KEY,
+    phone            TEXT NOT NULL,
+    updated_at       TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  )
+`);
+const upsertTgSession = db.prepare(
+  `INSERT INTO tg_sessions (telegram_user_id, phone, updated_at)
+   VALUES (?, ?, datetime('now','localtime'))
+   ON CONFLICT(telegram_user_id) DO UPDATE SET phone = excluded.phone, updated_at = excluded.updated_at`
+);
+const getTgSession = db.prepare('SELECT phone FROM tg_sessions WHERE telegram_user_id = ?');
+const isCoachChat = db.prepare('SELECT slot FROM coaches WHERE telegram_chat_id = ?');
+const listConfirmedByPhone = db.prepare(
+  'SELECT id, name, level, audience, gender FROM students WHERE phone = ? AND confirmed = 1'
+);
+function coachNameBySlot(slot) {
+  const m = /^coach(\d)$/.exec(slot); if (!m) return '';
+  const row = db.prepare('SELECT value FROM content WHERE key = ?').get('coach' + m[1] + '_name');
+  return row ? row.value : '';
+}
 const listCoaches = db.prepare('SELECT slot, telegram_chat_id FROM coaches ORDER BY slot');
 const getCoach = db.prepare('SELECT slot FROM coaches WHERE slot = ?');
 const updateCoachChat = db.prepare('UPDATE coaches SET telegram_chat_id = ? WHERE slot = ?');
 
 // ── Telegram helper ───────────────────────────────────────────────────────────
-async function sendTelegram(text) {
-  if (!TG_TOKEN || !TG_CHAT) return;
+async function tgApi(method, params) {
+  if (!TG_TOKEN) return null;
   try {
-    const url = `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`;
-    await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TG_CHAT, text, parse_mode: 'HTML' }),
+    const r = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/${method}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
     });
-  } catch { /* не блокируем */ }
+    return await r.json();
+  } catch { return null; }
+}
+async function sendTelegram(text) {
+  if (!TG_CHAT) return;
+  await tgApi('sendMessage', { chat_id: TG_CHAT, text, parse_mode: 'HTML' });
 }
 
 // ── Auth middleware ────────────────────────────────────────────────────────────
