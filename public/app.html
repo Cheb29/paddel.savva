@@ -156,7 +156,7 @@
         html+='<div class="mday">'+fmtDate(dt.date)+'</div>';
         dt.starts.forEach(s=>{
           html+='<div class="start" data-dt="'+esc(s.datetime)+'"><strong>'+esc(s.time)+'</strong><span class="muted">выбрать →</span></div>'
-            +'<div class="chips" data-for="'+esc(s.datetime)+'" style="display:none">'+s.durations.map(d=>'<button class="chip" data-dt="'+esc(s.datetime)+'" data-dur="'+d+'">'+(d/60)+' ч'+(d%60?' 30м':'')+'</button>').join('')+'</div>';
+            +'<div class="chips" data-for="'+esc(s.datetime)+'" style="display:none">'+s.durations.map(d=>'<button class="chip" data-dt="'+esc(s.datetime)+'" data-dur="'+d+'">'+Math.floor(d/60)+' ч'+(d%60?' 30 мин':'')+'</button>').join('')+'</div>';
         });
       });
       body().innerHTML=html;
