@@ -41,14 +41,14 @@
 **Interfaces:**
 - Produces: `PUBLIC_URL`, `WEBHOOK_SECRET`, `MANAGER_USERNAME`, `DEV_ALLOW_UNSIGNED`; `tgApi(method, params)`; таблица `tg_sessions`; statements `upsertTgSession`, `getTgSession`, `isCoachChat`, `listConfirmedByPhone`; хелпер `coachNameBySlot(slot)`.
 
-- [ ] **Шаг 1: Добавить импорт crypto**
+- [x] **Шаг 1: Добавить импорт crypto**
 
 В `server.js` в блок импортов (после строки 7 `import { fileURLToPath } from 'url';`) добавить:
 ```js
 import { createHmac } from 'crypto';
 ```
 
-- [ ] **Шаг 2: Добавить env-переменные в Config**
+- [x] **Шаг 2: Добавить env-переменные в Config**
 
 После строки `const TG_CHAT = process.env.TELEGRAM_CHAT_ID || '';` (строка 14) вставить:
 ```js
@@ -58,7 +58,7 @@ const MANAGER_USERNAME = process.env.MANAGER_USERNAME || '';
 const DEV_ALLOW_UNSIGNED = process.env.DEV_ALLOW_UNSIGNED === '1';
 ```
 
-- [ ] **Шаг 3: Переписать `sendTelegram` поверх `tgApi`**
+- [x] **Шаг 3: Переписать `sendTelegram` поверх `tgApi`**
 
 Заменить функцию `sendTelegram` (строки 243–253) на:
 ```js
@@ -78,7 +78,7 @@ async function sendTelegram(text) {
 }
 ```
 
-- [ ] **Шаг 4: Таблица `tg_sessions` + statements + хелпер**
+- [x] **Шаг 4: Таблица `tg_sessions` + statements + хелпер**
 
 В `server.js` сразу после строки `['coach1','coach2','coach3'].forEach(s => seedCoach.run(s));` (засев coaches из Фазы 1) вставить:
 ```js
@@ -107,7 +107,7 @@ function coachNameBySlot(slot) {
 }
 ```
 
-- [ ] **Шаг 5: Проверить, что сервер стартует и таблица создаётся**
+- [x] **Шаг 5: Проверить, что сервер стартует и таблица создаётся**
 
 Run:
 ```bash
@@ -116,7 +116,7 @@ node -e "const D=require('better-sqlite3');const db=new D('db/leads.db');console
 ```
 Expected: `tg_sessions cols: telegram_user_id,phone,updated_at`
 
-- [ ] **Шаг 6: Commit**
+- [x] **Шаг 6: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(2a): config vars, tgApi helper, tg_sessions table and statements"
 ```
@@ -132,7 +132,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2a): config vars,
 - Consumes: `WEBHOOK_SECRET`, `PUBLIC_URL`, `TG_TOKEN`, `tgApi`, `handleTgUpdate` (Task 3).
 - Produces: роут `POST /api/tg/webhook/:secret`; `initWebhook()`.
 
-- [ ] **Шаг 1: Добавить webhook-роут**
+- [x] **Шаг 1: Добавить webhook-роут**
 
 В `server.js` перед `// ── GET /admin ──` вставить:
 ```js
@@ -148,7 +148,7 @@ app.post('/api/tg/webhook/:secret', (req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Добавить `initWebhook` и вызвать на старте**
+- [x] **Шаг 2: Добавить `initWebhook` и вызвать на старте**
 
 Найти блок `app.listen(PORT, () => {` (≈конец файла) и внутри его колбэка, после существующих `console.log`, добавить вызов и саму функцию рядом. Сначала перед `app.listen(...)` вставить функцию:
 ```js
@@ -167,7 +167,7 @@ async function initWebhook() {
   initWebhook();
 ```
 
-- [ ] **Шаг 3: Проверить gating секрета (403 без секрета)**
+- [x] **Шаг 3: Проверить gating секрета (403 без секрета)**
 
 > `handleTgUpdate` появится в Task 3 — но на этом шаге проверяем только 403-ветку (до `handleTgUpdate` управление не доходит при неверном секрете). Пустой `WEBHOOK_SECRET` → все запросы 403.
 
@@ -180,7 +180,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: оба `403` (у второго верный путь, но нет заголовка-секрета).
 
-- [ ] **Шаг 4: Commit**
+- [x] **Шаг 4: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(2a): telegram webhook route + setWebhook on boot"
 ```
@@ -196,7 +196,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2a): telegram web
 - Consumes: `upsertTgSession`, `getTgSession`, `isCoachChat`, `coachNameBySlot`, `tgApi`, `PUBLIC_URL`.
 - Produces: `handleTgUpdate(update)`.
 
-- [ ] **Шаг 1: Добавить `handleTgUpdate`**
+- [x] **Шаг 1: Добавить `handleTgUpdate`**
 
 Перед `initWebhook` (или сразу после) вставить:
 ```js
@@ -248,7 +248,7 @@ async function handleTgUpdate(update) {
 }
 ```
 
-- [ ] **Шаг 2: Проверить, что контакт пишется в `tg_sessions` (локально)**
+- [x] **Шаг 2: Проверить, что контакт пишется в `tg_sessions` (локально)**
 
 `tgApi` с фейковым токеном не достучится до Telegram, но запись в БД — до отправки, поэтому наблюдаема.
 Run:
@@ -262,7 +262,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `webhook 200`; `session: {"telegram_user_id":555,"phone":"+7 900 111-22-33","updated_at":"…"}`
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(2a): handleTgUpdate — contact->session, trainer vs client greeting"
 ```
@@ -278,7 +278,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2a): handleTgUpda
 - Consumes: `createHmac`, `TG_TOKEN`, `DEV_ALLOW_UNSIGNED`, `getTgSession`, `upsertTgSession`, `listConfirmedByPhone`, `MANAGER_USERNAME`.
 - Produces: `validateInitData(initData)`; роут `POST /api/app/identify`.
 
-- [ ] **Шаг 1: Добавить валидатор и роут**
+- [x] **Шаг 1: Добавить валидатор и роут**
 
 В `server.js` рядом с webhook-роутом (перед `GET /admin`) вставить:
 ```js
@@ -316,7 +316,7 @@ app.post('/api/app/identify', (req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Проверить три ветки через dev-обход + валидный/битый initData**
+- [x] **Шаг 2: Проверить три ветки через dev-обход + валидный/битый initData**
 
 Run:
 ```bash
@@ -341,7 +341,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `need_phone -> need_phone`; `ok -> ok Иван Кон`; `unmatched -> unmatched savva_manager`; `signed ok -> ok` (валидная подпись прошла реальную проверку, dev-флаг не задействован для этой ветки, т.к. нет `dev_user_id`); `bad initData 401 -> 401`.
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(2a): /api/app/identify with initData HMAC validation and confirmed-phone match"
 ```
@@ -358,7 +358,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2a): /api/app/ide
 - Consumes: `POST /api/app/identify`.
 - Produces: страница Mini App на `/app`.
 
-- [ ] **Шаг 1: Добавить роут `/app`**
+- [x] **Шаг 1: Добавить роут `/app`**
 
 В `server.js` перед `// ── SPA fallback ──` (`app.get('*', …)`) вставить:
 ```js
@@ -367,7 +367,7 @@ app.get('/app', (_req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Создать `public/app.html`**
+- [x] **Шаг 2: Создать `public/app.html`**
 
 Создать файл `public/app.html` с содержимым:
 ```html
@@ -448,7 +448,7 @@ app.get('/app', (_req, res) => {
 </html>
 ```
 
-- [ ] **Шаг 3: Проверить, что страница отдаётся и HTML валиден**
+- [x] **Шаг 3: Проверить, что страница отдаётся и HTML валиден**
 
 Run:
 ```bash
@@ -460,7 +460,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `/app http -> 200`; grep `3` (все три маркера присутствуют); `script tags balanced: true`.
 
-- [ ] **Шаг 4: Commit**
+- [x] **Шаг 4: Commit**
 ```bash
 cd /root/savvateam && git add public/app.html server.js && git commit -m "feat(2a): Mini App page (public/app.html) served at /app"
 ```
@@ -471,11 +471,11 @@ cd /root/savvateam && git add public/app.html server.js && git commit -m "feat(2
 
 **Files:** нет изменений кода — выкладка и конфигурация прода.
 
-- [ ] **Шаг 1: Спросить у пользователя username менеджера**
+- [x] **Шаг 1: Спросить у пользователя username менеджера**
 
 `MANAGER_USERNAME` — реальный Telegram-username менеджера (без `@`), куда ведёт фолбэк незнакомца. Уточнить у пользователя перед записью в `.env`.
 
-- [ ] **Шаг 2: Дополнить прод `.env` новыми переменными**
+- [x] **Шаг 2: Дополнить прод `.env` новыми переменными**
 
 Сгенерировать секрет и дописать в `/root/savvateam-site/.env` (не затирая существующее):
 ```bash
@@ -485,7 +485,7 @@ sshpass -e ssh -o StrictHostKeyChecking=no root@45.139.29.201 "cd /root/savvatea
 ```
 (Заменить `<USERNAME_МЕНЕДЖЕРА>` на реальное значение из Шага 1.)
 
-- [ ] **Шаг 3: Выложить сервер и Mini App**
+- [x] **Шаг 3: Выложить сервер и Mini App**
 ```bash
 cd /root/savvateam && export SSHPASS='oDR%r1C%rZjm'
 sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no" server.js root@45.139.29.201:/root/savvateam-site/
@@ -493,14 +493,14 @@ sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no" public/app.html root@4
 echo "rsync done"
 ```
 
-- [ ] **Шаг 4: Перезапустить и проверить, что webhook установился**
+- [x] **Шаг 4: Перезапустить и проверить, что webhook установился**
 ```bash
 export SSHPASS='oDR%r1C%rZjm'
 sshpass -e ssh -o StrictHostKeyChecking=no root@45.139.29.201 "cd /root/savvateam-site && pm2 restart savvateam >/dev/null 2>&1 && sleep 2 && pm2 logs savvateam --lines 20 --nostream | grep -i webhook; echo '--- getWebhookInfo ---'; TOKEN=\$(grep '^TELEGRAM_BOT_TOKEN=' .env | cut -d= -f2-); curl -s \"https://api.telegram.org/bot\$TOKEN/getWebhookInfo\" | node -e \"let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log('url:',j.result.url,'| pending:',j.result.pending_update_count)})\""
 ```
 Expected: лог «Telegram webhook: установлен → …»; `getWebhookInfo` url = `https://savva.n2node.store/api/tg/webhook/<secret>`.
 
-- [ ] **Шаг 5: Прод smoke-тест `/app` и identify**
+- [x] **Шаг 5: Прод smoke-тест `/app` и identify**
 ```bash
 export SSHPASS='oDR%r1C%rZjm'
 sshpass -e ssh -o StrictHostKeyChecking=no root@45.139.29.201 "curl -s localhost:3002/app -o /dev/null -w '/app %{http_code}\n'; curl -s -X POST localhost:3002/api/app/identify -H 'Content-Type: application/json' -d '{}' -w ' identify(no-initData) %{http_code} (expect 401)\n' -o /dev/null"
@@ -508,11 +508,11 @@ echo "public /app:"; curl -s https://savva.n2node.store/app -o /dev/null -w '%{h
 ```
 Expected: `/app 200`; `identify(no-initData) 401`; публичный `/app` 200.
 
-- [ ] **Шаг 6: Живая проверка в Telegram (ручная, пользователем)**
+- [x] **Шаг 6: Живая проверка в Telegram (ручная, пользователем)**
 
 Открыть `@SavvaPadel_bot` → `/start` → «Поделиться телефоном». Известный подтверждённый ученик → Mini App приветствует; неизвестный → ссылка на менеджера. С аккаунта, чей id вписан в `coaches.telegram_chat_id` → `/start` даёт тренерский блок.
 
-- [ ] **Шаг 7: Push в репозиторий**
+- [x] **Шаг 7: Push в репозиторий**
 ```bash
 cd /root/savvateam && git push origin main
 ```
