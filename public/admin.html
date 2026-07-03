@@ -1118,9 +1118,11 @@ async function handleImageUpload(e,key){
 }
 
 /* ============= COACHES ============= */
+let _coachChats = null; // slot -> chat_id; НЕ в state (не персистится) — тянем с сервера на каждой загрузке
+function coachChatVal(id){ return (_coachChats && _coachChats['coach'+id] != null) ? _coachChats['coach'+id] : ''; }
 function renderCoaches(c){
   if(!state.coaches)state.coaches=[];
-  if(!state._coachChatsLoaded){ loadCoachChats().then(()=>{ state._coachChatsLoaded=true; renderCoaches(c); }); }
+  if(_coachChats === null){ loadCoachChats().then(()=>renderCoaches(c)); }
   c.innerHTML=`<div class="page-head">
     <div><div class="page-title">ТРЕНЕРЫ</div><div class="page-sub">${state.coaches.length} в команде · фото и био</div></div>
     <div class="page-actions"><button class="btn btn-primary" onclick="addCoach()">+ Добавить тренера</button></div>
@@ -1164,7 +1166,7 @@ function renderCoaches(c){
          <div style="display:flex;gap:8px;align-items:center"><label class="btn" style="display:inline-flex;cursor:pointer;font-size:11px">↑ Загрузить видео<input type="file" accept="video/*" style="display:none" onchange="handleCoachVideo(event,${co.id})"/></label>${co.video?`<button class="btn btn-danger" style="font-size:11px" onclick="clearCoachVideo(${co.id})">✕ Удалить видео</button>`:''}</div>
        </div>
        <div class="field" style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px"><label>Telegram chat_id тренера (user_id для уведомлений о записи)</label>
-         <input id="coachChat${co.id}" value="${escapeAttr(co.telegram_chat_id||'')}" placeholder="не привязан — сохраняется кнопкой «Сохранить» ниже" style="width:100%"/>
+         <input id="coachChat${co.id}" value="${escapeAttr(coachChatVal(co.id))}" placeholder="не привязан — сохраняется кнопкой «Сохранить» ниже" style="width:100%"/>
        </div>
        <div class="editor-actions"><button class="btn btn-primary" onclick="saveCoach(${co.id})">Сохранить</button><button class="btn btn-danger" onclick="delCoach(${co.id})">Удалить</button></div>
      </div>`).join('')}</div>`;
@@ -1172,8 +1174,9 @@ function renderCoaches(c){
 async function loadCoachChats(){
   try{
     const r=await fetch('/api/coaches?secret='+encodeURIComponent(adminSecret));
-    if(r.ok){const list=await r.json();(state.coaches||[]).forEach(co=>{const m=list.find(x=>x.slot==='coach'+co.id);if(m)co.telegram_chat_id=m.telegram_chat_id||'';});}
-  }catch(e){}
+    if(r.ok){const list=await r.json();_coachChats={};list.forEach(x=>{_coachChats[x.slot]=x.telegram_chat_id||'';});}
+    else _coachChats={};
+  }catch(e){ _coachChats={}; }
 }
 async function saveCoach(id){
   const co=state.coaches.find(x=>x.id===id);if(!co)return;
@@ -1206,7 +1209,7 @@ async function saveCoach(id){
   if(chatEl){
     const cv=chatEl.value.trim();
     await fetch('/api/coaches/coach'+n+'?secret='+encodeURIComponent(adminSecret),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegram_chat_id:cv})});
-    co.telegram_chat_id=cv;
+    if(_coachChats) _coachChats['coach'+n]=cv;
   }
   renderCoaches(document.getElementById('pageContent'));
   toast('Сохранено');
