@@ -226,6 +226,7 @@ tbody tr:hover .row-actions{opacity:1}
     <button class="nav-item" data-page="programs"><span class="icon">◈</span>Программы</button>
     <button class="nav-item" data-page="schedule"><span class="icon">▤</span>Расписание</button>
     <button class="nav-item" data-page="bookings"><span class="icon">✔</span>Записи</button>
+    <button class="nav-item" data-page="availability"><span class="icon">◔</span>Доступность</button>
     <button class="nav-item" data-page="prices"><span class="icon">₽</span>Цены</button>
     <button class="nav-item" data-page="testimonials"><span class="icon">"</span>Отзывы</button>
     <button class="nav-item" data-page="coaches"><span class="icon">★</span>Тренеры</button>
@@ -440,7 +441,7 @@ function navigate(page){
   document.getElementById('sidebar').classList.remove('open');
   const c=document.getElementById('pageContent');
   c.innerHTML='';
-  ({dashboard:renderDashboard,inbox:renderInbox,students:renderStudents,texts:renderTexts,media:renderMedia,programs:renderPrograms,prices:renderPrices,schedule:renderSchedule,bookings:renderBookings,testimonials:renderTestimonials,coaches:renderCoaches}[page]||renderDashboard)(c);
+  ({dashboard:renderDashboard,inbox:renderInbox,students:renderStudents,texts:renderTexts,media:renderMedia,programs:renderPrograms,prices:renderPrices,schedule:renderSchedule,bookings:renderBookings,availability:renderAvailability,testimonials:renderTestimonials,coaches:renderCoaches}[page]||renderDashboard)(c);
 }
 
 /* ============= TOAST ============= */
@@ -816,6 +817,55 @@ function savePrice(id){
   saveStore();toast('Сохранено');renderPrices(document.getElementById('pageContent'));
 }
 
+/* ============= AVAILABILITY ============= */
+const AV_DAY_LABELS = {1:'Понедельник',2:'Вторник',3:'Среда',4:'Четверг',5:'Пятница',6:'Суббота',0:'Воскресенье'};
+const AV_DAY_ORDER = [1,2,3,4,5,6,0];
+let availSlot = 'coach1';
+let availWindows = [];
+async function renderAvailability(c){
+  const coaches = state.coaches || [];
+  c.innerHTML = `<div class="page-head">
+      <div><div class="page-title">ДОСТУПНОСТЬ</div><div class="page-sub">Недельные окна свободного времени тренера (индивидуальная запись)</div></div>
+      <div class="page-actions"><button class="btn btn-primary" onclick="saveAvailability()">Сохранить</button></div></div>
+    <div class="toolbar">${coaches.map(co=>`<button class="btn${('coach'+co.id)===availSlot?' btn-primary':''}" onclick="selectAvailCoach('coach${co.id}')">${escapeHtml(co.name||('Тренер '+co.id))}</button>`).join('')}</div>
+    <div id="availGrid"><div class="empty"><div class="glyph">◔</div>Загрузка…</div></div>`;
+  await loadAvailability();
+  renderAvailGrid();
+}
+async function loadAvailability(){
+  availWindows = [];
+  try{const r=await fetch('/api/availability?slot='+availSlot+'&secret='+encodeURIComponent(adminSecret));if(r.ok)availWindows=await r.json();}catch(e){}
+}
+function selectAvailCoach(slot){ availSlot=slot; renderAvailability(document.getElementById('pageContent')); }
+function renderAvailGrid(){
+  const grid=document.getElementById('availGrid'); if(!grid)return;
+  grid.innerHTML = AV_DAY_ORDER.map(day=>{
+    const wins = availWindows.filter(w=>Number(w.day)===day);
+    return `<div class="editor-card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>${AV_DAY_LABELS[day]}</strong><button class="btn" onclick="addAvailWindow(${day})">+ окно</button></div>
+      ${wins.length?wins.map((w,i)=>`<div data-day="${day}" style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+        <input type="time" class="av-from" value="${escapeAttr(w.from_time)}" style="width:130px"/>
+        <span style="color:var(--muted)">—</span>
+        <input type="time" class="av-to" value="${escapeAttr(w.to_time)}" style="width:130px"/>
+        <button class="tiny-btn danger" onclick="delAvailWindow(${day},${i})">✕</button>
+      </div>`).join(''):'<div class="muted" style="font-size:13px">нет окон</div>'}
+    </div>`;
+  }).join('');
+}
+function collectAvailability(){
+  const out=[];
+  document.querySelectorAll('#availGrid [data-day]').forEach(r=>{
+    out.push({day:Number(r.dataset.day), from_time:r.querySelector('.av-from').value, to_time:r.querySelector('.av-to').value});
+  });
+  availWindows=out;
+}
+function addAvailWindow(day){ collectAvailability(); availWindows.push({day, from_time:'10:00', to_time:'11:00'}); renderAvailGrid(); }
+function delAvailWindow(day,i){ collectAvailability(); let seen=-1; availWindows=availWindows.filter(w=>{ if(Number(w.day)===day){seen++;return seen!==i;} return true; }); renderAvailGrid(); }
+async function saveAvailability(){
+  collectAvailability();
+  for(const w of availWindows){ if(!w.from_time||!w.to_time||String(w.from_time)>=String(w.to_time)){toast('Окно: начало должно быть раньше конца');return;} }
+  const r=await fetch('/api/availability?secret='+encodeURIComponent(adminSecret),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slot:availSlot,windows:availWindows})});
+  if(r.ok){toast('Доступность сохранена');}else{const e=await r.json().catch(()=>({}));toast(e.error||'Ошибка');}
+}
 /* ============= BOOKINGS ============= */
 let bookingsScope = 'future';
 async function renderBookings(c){
