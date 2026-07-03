@@ -197,6 +197,48 @@ const seedContent = db.transaction(() => {
 });
 seedContent();
 
+// ── Students & Coaches (Фаза 1 booking) ───────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS students (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    name       TEXT NOT NULL,
+    phone      TEXT NOT NULL,
+    level      REAL,
+    audience   TEXT,
+    gender     TEXT,
+    confirmed  INTEGER NOT NULL DEFAULT 0,
+    source     TEXT NOT NULL DEFAULT 'manual',
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  )
+`);
+db.exec(`
+  CREATE TABLE IF NOT EXISTS coaches (
+    slot             TEXT PRIMARY KEY,
+    telegram_chat_id TEXT,
+    created_at       TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  )
+`);
+
+const insertStudent = db.prepare(
+  `INSERT INTO students (name, phone, level, audience, gender, confirmed, source)
+   VALUES (@name, @phone, @level, @audience, @gender, @confirmed, @source)`
+);
+const findUnconfirmedByPhone = db.prepare(
+  'SELECT id FROM students WHERE phone = ? AND confirmed = 0 LIMIT 1'
+);
+const listStudents = db.prepare(
+  `SELECT id, name, phone, level, audience, gender, confirmed, source, created_at
+   FROM students ORDER BY id DESC LIMIT 2000`
+);
+const getStudent = db.prepare('SELECT * FROM students WHERE id = ?');
+const deleteStudentStmt = db.prepare('DELETE FROM students WHERE id = ?');
+
+const seedCoach = db.prepare('INSERT OR IGNORE INTO coaches (slot) VALUES (?)');
+['coach1','coach2','coach3'].forEach(s => seedCoach.run(s));
+const listCoaches = db.prepare('SELECT slot, telegram_chat_id FROM coaches ORDER BY slot');
+const getCoach = db.prepare('SELECT slot FROM coaches WHERE slot = ?');
+const updateCoachChat = db.prepare('UPDATE coaches SET telegram_chat_id = ? WHERE slot = ?');
+
 // ── Telegram helper ───────────────────────────────────────────────────────────
 async function sendTelegram(text) {
   if (!TG_TOKEN || !TG_CHAT) return;
