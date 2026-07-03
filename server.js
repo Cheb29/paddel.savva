@@ -890,6 +890,25 @@ app.patch('/api/bookings/:id/cancel', requireSecret, (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/availability', requireSecret, (req, res) => {
+  const slot = String(req.query.slot || '');
+  if (!getCoach.get(slot)) return res.status(400).json({ error: 'Неизвестный тренер' });
+  res.json(listAvailability.all(slot));
+});
+
+app.post('/api/availability', requireSecret, (req, res) => {
+  const slot = String((req.body && req.body.slot) || '');
+  if (!getCoach.get(slot)) return res.status(404).json({ error: 'Тренер не найден' });
+  const v = validateWindows((req.body && req.body.windows) || []);
+  if (v.error) return res.status(400).json({ error: v.error });
+  const save = db.transaction(() => {
+    deleteAvailability.run(slot);
+    for (const w of v.windows) insertAvailability.run(slot, w.day, w.from_time, w.to_time);
+  });
+  save();
+  res.json({ ok: true, count: v.windows.length });
+});
+
 // ── Telegram webhook (Фаза 2A) ────────────────────────────────────────────────
 app.post('/api/tg/webhook/:secret', (req, res) => {
   if (!WEBHOOK_SECRET ||
