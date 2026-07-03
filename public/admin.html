@@ -271,16 +271,7 @@ const SESSION_KEY='savva_admin_session';
 let adminSecret='';
 
 const SEED={
-  students:[
-    {id:1,name:'Артём Волков',phone:'+7 921 545-22-12',level:'A',plan:'Элита',visits:48,since:'2024-10-12',status:'active'},
-    {id:2,name:'Мария Зайцева',phone:'+7 911 887-34-91',level:'B',plan:'Прогресс',visits:24,since:'2025-02-03',status:'active'},
-    {id:3,name:'Дмитрий Орлов',phone:'+7 921 332-09-87',level:'A',plan:'Элита',visits:65,since:'2024-08-20',status:'active'},
-    {id:4,name:'Ольга Беляева',phone:'+7 921 778-54-33',level:'C',plan:'Старт',visits:6,since:'2026-03-15',status:'active'},
-    {id:5,name:'Илья Соловьёв',phone:'+7 911 221-67-45',level:'B',plan:'Прогресс',visits:38,since:'2024-12-10',status:'paused'},
-    {id:6,name:'Виктория Соколова',phone:'+7 905 443-91-22',level:'A',plan:'Элита',visits:72,since:'2024-06-18',status:'active'},
-    {id:7,name:'Никита Журавлёв',phone:'+7 921 776-12-58',level:'B',plan:'Прогресс',visits:18,since:'2025-09-08',status:'active'},
-    {id:8,name:'Александра Чернова',phone:'+7 911 554-33-90',level:'C',plan:'Старт',visits:11,since:'2026-01-22',status:'active'},
-  ],
+  students:[],
   programs:[
     {id:1,name:'СТАРТ',level:'Пакет · Старт',price:'5 000 ₽',sessions:'4 персональных занятия',desc:'Персональные тренировки для тех, кто делает первые шаги в падел теннисе. Индивидуальный подход с первого занятия.',details:'4 персональных занятия|5 000 ₽ за занятие|Инвентарь включён'},
     {id:2,name:'ПРОГРЕСС',level:'Пакет · Прогресс',price:'4 500 ₽',sessions:'8 персональных занятий',desc:'Персональные тренировки для уверенного роста. Видеоразбор каждого занятия и индивидуальный план развития.',details:'8 персональных занятий|Видеоанализ игры|Участие в турнирах'},
@@ -695,10 +686,10 @@ async function setLeadStatus(id,status){
 
 /* ============= STUDENTS ============= */
 function renderStudents(c){
-  const filter={search:'',plan:'all',status:'all'};
-  c.innerHTML=`
-    <div class="page-head">
-      <div><div class="page-title">УЧЕНИКИ</div><div class="page-sub">${state.students.length} в базе · ${state.students.filter(s=>s.status==='active').length} активных</div></div>
+  const filter={search:'',confirmed:'all'};
+  const AUD={adult:'Взрослый',kids:'Ребёнок'}, GEN={m:'М',f:'Ж'};
+  c.innerHTML=`<div class="page-head">
+      <div><div class="page-title">УЧЕНИКИ</div><div class="page-sub" id="stSub">Загрузка…</div></div>
       <div class="page-actions">
         <button class="btn" onclick="exportCSV(state.students,'students.csv')">↓ CSV</button>
         <button class="btn btn-primary" onclick="newStudent()">+ Ученик</button>
@@ -706,69 +697,76 @@ function renderStudents(c){
     </div>
     <div class="toolbar">
       <input id="stSearch" type="text" placeholder="Поиск по имени, телефону…" />
-      <select id="stPlan"><option value="all">Все тарифы</option><option>Старт</option><option>Прогресс</option><option>Элита</option></select>
-      <select id="stStatus"><option value="all">Все статусы</option><option value="active">Активные</option><option value="paused">На паузе</option></select>
+      <select id="stConfirmed"><option value="all">Все</option><option value="1">Подтверждённые</option><option value="0">Не подтверждённые</option></select>
     </div>
-    <div id="stList"></div>`;
+    <div id="stList"><div class="empty"><div class="glyph">◉</div>Загрузка…</div></div>`;
   const refresh=()=>{
     const list=state.students.filter(s=>{
-      if(filter.plan!=='all'&&s.plan!==filter.plan)return false;
-      if(filter.status!=='all'&&s.status!==filter.status)return false;
+      if(filter.confirmed!=='all'&&String(s.confirmed)!==filter.confirmed)return false;
       if(filter.search){const q=filter.search.toLowerCase();return [s.name,s.phone].join(' ').toLowerCase().includes(q)}
       return true;
     });
-    if(!list.length){document.getElementById('stList').innerHTML=`<div class="empty"><div class="glyph">◉</div>Нет учеников по фильтру</div>`;return}
-    document.getElementById('stList').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Ученик</th><th>Уровень</th><th>Тариф</th><th>Тренировок</th><th>С нами</th><th>Статус</th><th></th></tr></thead><tbody>${list.map(s=>`
+    const sub=document.getElementById('stSub'); if(sub)sub.textContent=`${state.students.length} в базе · ${state.students.filter(s=>s.confirmed).length} подтверждённых`;
+    const el=document.getElementById('stList'); if(!el)return;
+    if(!list.length){el.innerHTML=`<div class="empty"><div class="glyph">◉</div>Нет учеников</div>`;return}
+    el.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Ученик</th><th>Уровень</th><th>Аудитория</th><th>Пол</th><th>Источник</th><th>Статус</th><th></th></tr></thead><tbody>${list.map(s=>`
       <tr onclick="openStudent(${s.id})" style="cursor:pointer">
-        <td><div style="display:flex;align-items:center;gap:12px"><div class="avatar" style="background:var(--surface2);color:var(--text)">${s.name[0]}</div><div><strong>${escapeHtml(s.name)}</strong><div style="color:var(--muted);font-size:11px">${escapeHtml(s.phone)}</div></div></div></td>
-        <td><span class="tag tag-elite">${s.level}</span></td>
-        <td>${escapeHtml(s.plan)}</td>
-        <td><strong>${s.visits}</strong></td>
-        <td style="color:var(--muted);font-size:12px">${formatDate(s.since)}</td>
-        <td><span class="tag tag-${s.status}">${s.status==='active'?'Активен':'Пауза'}</span></td>
-        <td><div class="row-actions" onclick="event.stopPropagation()"><button class="tiny-btn" onclick="toggleStudentStatus(${s.id})" title="Пауза/Активировать">⏸</button><button class="tiny-btn danger" onclick="deleteStudent(${s.id})" title="Удалить">✕</button></div></td>
+        <td><div style="display:flex;align-items:center;gap:12px"><div class="avatar" style="background:var(--surface2);color:var(--text)">${escapeHtml((s.name||'?')[0])}</div><div><strong>${escapeHtml(s.name)}</strong><div style="color:var(--muted);font-size:11px">${escapeHtml(s.phone)}</div></div></div></td>
+        <td>${s.level!=null?`<span class="tag tag-elite">${s.level}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+        <td>${s.audience?AUD[s.audience]:'—'}</td>
+        <td>${s.gender?GEN[s.gender]:'—'}</td>
+        <td>${s.source==='lead'?'<span class="tag" style="background:var(--accent-dim);color:var(--accent)">из лида</span>':'вручную'}</td>
+        <td><span class="tag tag-${s.confirmed?'active':'paused'}">${s.confirmed?'Подтверждён':'Не подтв.'}</span></td>
+        <td><div class="row-actions" onclick="event.stopPropagation()"><button class="tiny-btn" onclick="toggleStudentConfirmed(${s.id})" title="Подтвердить/снять">✓</button><button class="tiny-btn danger" onclick="deleteStudent(${s.id})" title="Удалить">✕</button></div></td>
       </tr>`).join('')}</tbody></table></div>`;
   };
   document.getElementById('stSearch').addEventListener('input',e=>{filter.search=e.target.value;refresh()});
-  document.getElementById('stPlan').addEventListener('change',e=>{filter.plan=e.target.value;refresh()});
-  document.getElementById('stStatus').addEventListener('change',e=>{filter.status=e.target.value;refresh()});
-  refresh();
+  document.getElementById('stConfirmed').addEventListener('change',e=>{filter.confirmed=e.target.value;refresh()});
+  loadStudents().then(refresh);
+}
+async function loadStudents(){
+  try{const r=await fetch('/api/students?secret='+encodeURIComponent(adminSecret));if(r.ok)state.students=await r.json();}catch(e){}
 }
 function openStudent(id){
   const s=state.students.find(x=>x.id===id);if(!s)return;
   openDrawer(s.name,
-    `<div class="drawer-row"><span class="lbl">Телефон</span><span class="val">${escapeHtml(s.phone)}</span></div>
-     <div class="drawer-row"><span class="lbl">Уровень</span><span class="val">${s.level}</span></div>
-     <div class="drawer-row"><span class="lbl">Тариф</span><span class="val">${escapeHtml(s.plan)}</span></div>
-     <div class="drawer-row"><span class="lbl">Тренировок</span><span class="val">${s.visits}</span></div>
-     <div class="drawer-row"><span class="lbl">С нами с</span><span class="val">${formatDate(s.since)}</span></div>
-     <div class="drawer-row"><span class="lbl">Статус</span><span class="val"><span class="tag tag-${s.status}">${s.status==='active'?'Активен':'Пауза'}</span></span></div>
-     <div style="margin-top:24px"><div class="lbl" style="margin-bottom:10px">Редактирование</div>
-      <div class="field"><label>Имя</label><input id="edStName" value="${escapeAttr(s.name)}"/></div>
-      <div class="field"><label>Телефон</label><input id="edStPhone" value="${escapeAttr(s.phone)}"/></div>
-      <div class="field"><label>Тариф</label><select id="edStPlan"><option ${s.plan==='Старт'?'selected':''}>Старт</option><option ${s.plan==='Прогресс'?'selected':''}>Прогресс</option><option ${s.plan==='Элита'?'selected':''}>Элита</option></select></div>
-     </div>`,
+    `<div class="field"><label>Имя</label><input id="edStName" value="${escapeAttr(s.name)}"/></div>
+     <div class="field"><label>Телефон</label><input id="edStPhone" value="${escapeAttr(s.phone)}"/></div>
+     <div class="field"><label>Уровень (1.0–7.0)</label><input id="edStLevel" type="number" step="0.5" min="1" max="7" value="${s.level!=null?s.level:''}"/></div>
+     <div class="field"><label>Аудитория</label><select id="edStAud"><option value="" ${s.audience==null?'selected':''}>—</option><option value="adult" ${s.audience==='adult'?'selected':''}>Взрослый</option><option value="kids" ${s.audience==='kids'?'selected':''}>Ребёнок</option></select></div>
+     <div class="field"><label>Пол</label><select id="edStGen"><option value="" ${s.gender==null?'selected':''}>—</option><option value="m" ${s.gender==='m'?'selected':''}>М</option><option value="f" ${s.gender==='f'?'selected':''}>Ж</option></select></div>
+     <div class="field"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="edStConfirmed" ${s.confirmed?'checked':''}/> Подтверждён (доступ к записи)</label></div>`,
     `<button class="btn btn-primary" onclick="saveStudent(${id})">Сохранить</button><button class="btn" onclick="closeDrawer()">Отмена</button>`);
 }
-function saveStudent(id){
-  const s=state.students.find(x=>x.id===id);if(!s)return;
-  s.name=document.getElementById('edStName').value;
-  s.phone=document.getElementById('edStPhone').value;
-  s.plan=document.getElementById('edStPlan').value;
-  saveStore();renderStudents(document.getElementById('pageContent'));closeDrawer();toast('Сохранено');
+async function saveStudent(id){
+  const lvl=document.getElementById('edStLevel').value;
+  const body={
+    name:document.getElementById('edStName').value.trim(),
+    phone:document.getElementById('edStPhone').value.trim(),
+    level:lvl===''?null:Number(lvl),
+    audience:document.getElementById('edStAud').value||null,
+    gender:document.getElementById('edStGen').value||null,
+    confirmed:document.getElementById('edStConfirmed').checked?1:0,
+  };
+  const r=await fetch('/api/students/'+id+'?secret='+encodeURIComponent(adminSecret),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok){const e=await r.json().catch(()=>({}));toast(e.error||'Ошибка сохранения');return}
+  closeDrawer();renderStudents(document.getElementById('pageContent'));toast('Сохранено');
 }
-function toggleStudentStatus(id){
+async function toggleStudentConfirmed(id){
   const s=state.students.find(x=>x.id===id);if(!s)return;
-  s.status=s.status==='active'?'paused':'active';saveStore();renderStudents(document.getElementById('pageContent'));
+  const r=await fetch('/api/students/'+id+'?secret='+encodeURIComponent(adminSecret),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirmed:s.confirmed?0:1})});
+  if(r.ok)renderStudents(document.getElementById('pageContent'));
 }
-function deleteStudent(id){
+async function deleteStudent(id){
   if(!confirm('Удалить ученика?'))return;
-  state.students=state.students.filter(s=>s.id!==id);saveStore();renderStudents(document.getElementById('pageContent'));toast('Удалено');
+  const r=await fetch('/api/students/'+id+'?secret='+encodeURIComponent(adminSecret),{method:'DELETE'});
+  if(r.ok){renderStudents(document.getElementById('pageContent'));toast('Удалено');}
 }
-function newStudent(){
-  const id=Math.max(0,...state.students.map(s=>s.id))+1;
-  state.students.unshift({id,name:'Новый ученик',phone:'+7 ___',level:'C',plan:'Старт',visits:0,since:new Date().toISOString().slice(0,10),status:'active'});
-  saveStore();renderStudents(document.getElementById('pageContent'));openStudent(id);
+async function newStudent(){
+  const r=await fetch('/api/students?secret='+encodeURIComponent(adminSecret),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'Новый ученик',phone:'+7'})});
+  if(!r.ok){toast('Ошибка создания');return}
+  const {id}=await r.json();
+  await loadStudents();renderStudents(document.getElementById('pageContent'));openStudent(id);
 }
 
 /* ============= PROGRAMS ============= */
