@@ -275,6 +275,94 @@ function coachNameBySlot(slot) {
   const row = db.prepare('SELECT value FROM content WHERE key = ?').get('coach' + m[1] + '_name');
   return row ? row.value : '';
 }
+
+// ── Bookings (Фаза 2B) ────────────────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS bookings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER NOT NULL,
+    type TEXT NOT NULL DEFAULT 'group',
+    group_id TEXT,
+    date TEXT,
+    coach_id TEXT,
+    datetime TEXT,
+    status TEXT NOT NULL DEFAULT 'confirmed',
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  )
+`);
+db.exec(`
+  CREATE UNIQUE INDEX IF NOT EXISTS ux_booking_active
+    ON bookings(student_id, group_id, date)
+    WHERE status = 'confirmed' AND type = 'group'
+`);
+const countConfirmedStmt = db.prepare(
+  "SELECT COUNT(*) AS n FROM bookings WHERE group_id = ? AND date = ? AND status = 'confirmed' AND type = 'group'"
+);
+const activeBookingExists = db.prepare(
+  "SELECT id FROM bookings WHERE student_id = ? AND group_id = ? AND date = ? AND status = 'confirmed' AND type = 'group' LIMIT 1"
+);
+const insertGroupBooking = db.prepare(
+  "INSERT INTO bookings (student_id, type, group_id, date) VALUES (?, 'group', ?, ?)"
+);
+const studentActiveBookings = db.prepare(
+  "SELECT group_id, date FROM bookings WHERE student_id = ? AND status = 'confirmed' AND type = 'group'"
+);
+
+const WEEKDAY = { 'ВС':0, 'ПН':1, 'ВТ':2, 'СР':3, 'ЧТ':4, 'ПТ':5, 'СБ':6 };
+function scheduleData() {
+  const row = db.prepare('SELECT value FROM content WHERE key = ?').get('schedule_data');
+  if (!row) return null;
+  try { return JSON.parse(row.value); } catch { return null; }
+}
+function isoDate(d) {
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function parseStartMinutes(time) {
+  const m = /(\d{1,2}):(\d{2})/.exec(String(time || ''));
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+}
+function occStart(dateIso, time) {
+  const [y, mo, da] = dateIso.split('-').map(Number);
+  const d = new Date(y, mo - 1, da, 0, 0, 0, 0);
+  const mins = parseStartMinutes(time);
+  if (mins != null) d.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+  return d;
+}
+function groupOccurrences(days = 14) {
+  const data = scheduleData();
+  if (!data || !Array.isArray(data.days) || !Array.isArray(data.rows)) return [];
+  const now = new Date();
+  const out = [];
+  for (let off = 0; off < days; off++) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + off);
+    const wd = d.getDay();
+    const dateIso = isoDate(d);
+    data.days.forEach((label, ci) => {
+      if (WEEKDAY[label] !== wd) return;
+      data.rows.forEach(row => {
+        const cell = row.cells && row.cells[ci];
+        if (!cell || !cell.title || !cell.id) return;
+        if (occStart(dateIso, row.time) <= now) return;
+        out.push({
+          group_id: cell.id, date: dateIso, time: row.time,
+          title: cell.title, meta: cell.meta, cat: cell.cat,
+          level_min: cell.level_min, level_max: cell.level_max,
+          audience: cell.audience, gender: cell.gender,
+          coach_id: cell.coach_id, capacity: cell.capacity,
+        });
+      });
+    });
+  }
+  return out;
+}
+function eligible(student, cell) {
+  if (student.audience == null || student.level == null || student.gender == null) return false;
+  if (cell.audience !== student.audience) return false;
+  if (!(cell.level_min <= student.level && student.level <= cell.level_max)) return false;
+  if (!(cell.gender === 'mixed' || cell.gender === student.gender)) return false;
+  return true;
+}
 const listCoaches = db.prepare('SELECT slot, telegram_chat_id FROM coaches ORDER BY slot');
 const getCoach = db.prepare('SELECT slot FROM coaches WHERE slot = ?');
 const updateCoachChat = db.prepare('UPDATE coaches SET telegram_chat_id = ? WHERE slot = ?');
