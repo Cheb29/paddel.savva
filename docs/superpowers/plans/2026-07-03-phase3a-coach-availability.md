@@ -40,7 +40,7 @@
 **Interfaces:**
 - Produces: таблица `coach_availability`; statements `listAvailability`, `deleteAvailability`, `insertAvailability`; `isHHMM(s)`, `validateWindows(windows)`.
 
-- [ ] **Шаг 1: Добавить DDL, statements и валидатор**
+- [x] **Шаг 1: Добавить DDL, statements и валидатор**
 
 В `server.js` сразу после строки `const getCoach = db.prepare('SELECT slot FROM coaches WHERE slot = ?');` вставить:
 ```js
@@ -72,7 +72,7 @@ function validateWindows(windows) {
 }
 ```
 
-- [ ] **Шаг 2: Проверить создание таблицы**
+- [x] **Шаг 2: Проверить создание таблицы**
 
 Run:
 ```bash
@@ -81,7 +81,7 @@ node -e "const D=require('better-sqlite3');const db=new D('db/leads.db');console
 ```
 Expected: `coach_availability cols: id,slot,day,from_time,to_time`
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(3a): coach_availability table, statements and window validator"
 ```
@@ -97,7 +97,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(3a): coach_availa
 - Consumes: `requireSecret`, `getCoach`, `listAvailability`, `deleteAvailability`, `insertAvailability`, `validateWindows`, `db`.
 - Produces: роуты `GET /api/availability`, `POST /api/availability`.
 
-- [ ] **Шаг 1: Добавить роуты**
+- [x] **Шаг 1: Добавить роуты**
 
 В `server.js` сразу после роута `PATCH /api/bookings/:id/cancel` (после его `});`) вставить:
 ```js
@@ -122,7 +122,7 @@ app.post('/api/availability', requireSecret, (req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Проверить CRUD-цикл и валидацию**
+- [x] **Шаг 2: Проверить CRUD-цикл и валидацию**
 
 Run:
 ```bash
@@ -140,7 +140,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: post → `{"ok":true,"count":2}`; get → 2 окна сортированы; replace → `count 1`, after get `1` (заменено, не накоплено); `from>=to` / `bad day` / `bad time` → `400`; unknown slot → `400`; empty → `count 0`.
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(3a): GET/POST /api/availability (replace-all with validation)"
 ```
@@ -156,21 +156,21 @@ cd /root/savvateam && git add server.js && git commit -m "feat(3a): GET/POST /ap
 - Consumes: `GET/POST /api/availability`, `adminSecret`, `state.coaches`, `escapeHtml`, `escapeAttr`, `toast`.
 - Produces: `renderAvailability(c)`, `selectAvailCoach(slot)`, `loadAvailability()`, `renderAvailGrid()`, `collectAvailability()`, `addAvailWindow(day)`, `delAvailWindow(day,i)`, `saveAvailability()`.
 
-- [ ] **Шаг 1: Пункт меню**
+- [x] **Шаг 1: Пункт меню**
 
 После строки 228 (`<button class="nav-item" data-page="bookings">…Записи</button>`) вставить:
 ```html
     <button class="nav-item" data-page="availability"><span class="icon">◔</span>Доступность</button>
 ```
 
-- [ ] **Шаг 2: Регистрация в `navigate()`**
+- [x] **Шаг 2: Регистрация в `navigate()`**
 
 В объекте-роутере (строка 443) добавить `availability:renderAvailability,` (например, после `bookings:renderBookings,`):
 ```js
   ({dashboard:renderDashboard,inbox:renderInbox,students:renderStudents,texts:renderTexts,media:renderMedia,programs:renderPrograms,prices:renderPrices,schedule:renderSchedule,bookings:renderBookings,availability:renderAvailability,testimonials:renderTestimonials,coaches:renderCoaches}[page]||renderDashboard)(c);
 ```
 
-- [ ] **Шаг 3: Функции раздела**
+- [x] **Шаг 3: Функции раздела**
 
 Перед строкой 819 (`/* ============= BOOKINGS ============= */`) вставить:
 ```js
@@ -225,7 +225,7 @@ async function saveAvailability(){
 }
 ```
 
-- [ ] **Шаг 4: Проверить парсинг админки**
+- [x] **Шаг 4: Проверить парсинг админки**
 
 Run:
 ```bash
@@ -233,7 +233,7 @@ cd /root/savvateam && node -e "const h=require('fs').readFileSync('public/admin.
 ```
 Expected: `admin availability OK`
 
-- [ ] **Шаг 5: Проверить в браузере (end-to-end)**
+- [x] **Шаг 5: Проверить в браузере (end-to-end)**
 
 Run: `cd /root/savvateam && node server.js`, `http://localhost:3000/admin` → «Доступность». Выбрать тренера → добавить окно (день ПН, 10:00–13:00) → «Сохранить» (toast «Доступность сохранена»). Затем:
 ```bash
@@ -241,7 +241,7 @@ curl -s "localhost:3000/api/availability?slot=coach1" | node -e "let d='';proces
 ```
 Expected: окна сохранены; после перезагрузки страницы и выбора тренера окна снова видны (грузятся с сервера).
 
-- [ ] **Шаг 6: Commit**
+- [x] **Шаг 6: Commit**
 ```bash
 cd /root/savvateam && git add public/admin.html && git commit -m "feat(3a): admin Availability section (per-trainer weekly windows editor)"
 ```
@@ -252,7 +252,7 @@ cd /root/savvateam && git add public/admin.html && git commit -m "feat(3a): admi
 
 **Files:** нет изменений кода — выкладка.
 
-- [ ] **Шаг 1: Выложить сервер и админку**
+- [x] **Шаг 1: Выложить сервер и админку**
 ```bash
 cd /root/savvateam && export SSHPASS='oDR%r1C%rZjm'
 sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no" server.js root@45.139.29.201:/root/savvateam-site/
@@ -260,7 +260,7 @@ sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no" public/admin.html root
 echo "rsync done"
 ```
 
-- [ ] **Шаг 2: Перезапустить и проверить таблицу + API**
+- [x] **Шаг 2: Перезапустить и проверить таблицу + API**
 ```bash
 export SSHPASS='oDR%r1C%rZjm'
 sshpass -e ssh -o StrictHostKeyChecking=no root@45.139.29.201 "cd /root/savvateam-site && pm2 restart savvateam >/dev/null 2>&1 && sleep 1.5 && node -e \"const D=require('better-sqlite3');const db=new D('db/leads.db');console.log('coach_availability cols:',db.prepare('PRAGMA table_info(coach_availability)').all().length)\"
@@ -269,11 +269,11 @@ curl -s 'localhost:3002/api/availability?slot=coach1' -o /dev/null -w 'availabil
 ```
 Expected: `coach_availability cols: 5`; `availability(secret) 200`; `availability(no-secret) 401`.
 
-- [ ] **Шаг 3: Проверить админку на проде**
+- [x] **Шаг 3: Проверить админку на проде**
 
 Открыть `https://savva.n2node.store/admin` (Ctrl+F5) → «Доступность» → выбрать тренера → добавить окна → «Сохранить» → перезагрузить: окна на месте.
 
-- [ ] **Шаг 4: Push**
+- [x] **Шаг 4: Push**
 ```bash
 cd /root/savvateam && git push origin main
 ```
