@@ -1163,8 +1163,8 @@ function renderCoaches(c){
          <div class="field"><label>URL видео (mp4 / YouTube)</label><input data-cid="${co.id}" data-key="video" value="${escapeAttr(co.video&&!co.video.startsWith('data:')?co.video:'')}" placeholder="https://..."/></div>
          <div style="display:flex;gap:8px;align-items:center"><label class="btn" style="display:inline-flex;cursor:pointer;font-size:11px">↑ Загрузить видео<input type="file" accept="video/*" style="display:none" onchange="handleCoachVideo(event,${co.id})"/></label>${co.video?`<button class="btn btn-danger" style="font-size:11px" onclick="clearCoachVideo(${co.id})">✕ Удалить видео</button>`:''}</div>
        </div>
-       <div class="field" style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px"><label>Telegram chat_id (для уведомлений о записи · Фаза 2)</label>
-         <div style="display:flex;gap:8px"><input id="coachChat${co.id}" value="${escapeAttr(co.telegram_chat_id||'')}" placeholder="не привязан" style="flex:1"/><button class="btn" onclick="saveCoachChat(${co.id})">Сохранить</button></div>
+       <div class="field" style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px"><label>Telegram chat_id тренера (user_id для уведомлений о записи)</label>
+         <input id="coachChat${co.id}" value="${escapeAttr(co.telegram_chat_id||'')}" placeholder="не привязан — сохраняется кнопкой «Сохранить» ниже" style="width:100%"/>
        </div>
        <div class="editor-actions"><button class="btn btn-primary" onclick="saveCoach(${co.id})">Сохранить</button><button class="btn btn-danger" onclick="delCoach(${co.id})">Удалить</button></div>
      </div>`).join('')}</div>`;
@@ -1174,12 +1174,6 @@ async function loadCoachChats(){
     const r=await fetch('/api/coaches?secret='+encodeURIComponent(adminSecret));
     if(r.ok){const list=await r.json();(state.coaches||[]).forEach(co=>{const m=list.find(x=>x.slot==='coach'+co.id);if(m)co.telegram_chat_id=m.telegram_chat_id||'';});}
   }catch(e){}
-}
-async function saveCoachChat(id){
-  const el=document.getElementById('coachChat'+id); if(!el)return;
-  const val=el.value.trim();
-  const r=await fetch('/api/coaches/coach'+id+'?secret='+encodeURIComponent(adminSecret),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegram_chat_id:val})});
-  if(r.ok){const co=state.coaches.find(x=>x.id===id);if(co)co.telegram_chat_id=val;toast('chat_id сохранён');}else{toast('Ошибка');}
 }
 async function saveCoach(id){
   const co=state.coaches.find(x=>x.id===id);if(!co)return;
@@ -1207,6 +1201,13 @@ async function saveCoach(id){
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify(payload)
   });
+  // сохранить Telegram chat_id тренера (таблица coaches, слот coachN)
+  const chatEl=document.getElementById('coachChat'+n);
+  if(chatEl){
+    const cv=chatEl.value.trim();
+    await fetch('/api/coaches/coach'+n+'?secret='+encodeURIComponent(adminSecret),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegram_chat_id:cv})});
+    co.telegram_chat_id=cv;
+  }
   renderCoaches(document.getElementById('pageContent'));
   toast('Сохранено');
 }
