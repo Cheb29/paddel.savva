@@ -39,7 +39,7 @@
 **Interfaces:**
 - Produces: таблица `bookings`, индекс `ux_booking_active`; statements `countConfirmedStmt`, `activeBookingExists`, `insertGroupBooking`, `studentActiveBookings`.
 
-- [ ] **Шаг 1: Добавить DDL и statements**
+- [x] **Шаг 1: Добавить DDL и statements**
 
 В `server.js` сразу после функции `confirmedByPhone` (после её закрывающей `}`) вставить:
 ```js
@@ -76,7 +76,7 @@ const studentActiveBookings = db.prepare(
 );
 ```
 
-- [ ] **Шаг 2: Проверить создание таблицы и индекса**
+- [x] **Шаг 2: Проверить создание таблицы и индекса**
 
 Run:
 ```bash
@@ -85,7 +85,7 @@ node -e "const D=require('better-sqlite3');const db=new D('db/leads.db');console
 ```
 Expected: `bookings cols: id,student_id,type,group_id,date,coach_id,datetime,status,created_at`; `index: ux_booking_active`.
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(2b): bookings table, unique active index and statements"
 ```
@@ -101,7 +101,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2b): bookings tab
 - Consumes: `db` (для `content.schedule_data`).
 - Produces: `WEEKDAY`, `scheduleData()`, `isoDate(d)`, `parseStartMinutes(time)`, `occStart(dateIso, time)`, `groupOccurrences(days)`, `eligible(student, cell)`.
 
-- [ ] **Шаг 1: Добавить хелперы**
+- [x] **Шаг 1: Добавить хелперы**
 
 В `server.js` сразу после statements из Task 1 вставить:
 ```js
@@ -163,7 +163,7 @@ function eligible(student, cell) {
 }
 ```
 
-- [ ] **Шаг 2: Проверить генерацию и допуск на реальном сиде**
+- [x] **Шаг 2: Проверить генерацию и допуск на реальном сиде**
 
 Run:
 ```bash
@@ -189,7 +189,7 @@ console.log('eligible for adult/3/m:',ok.length,'sample:',ok.slice(0,3).map(o=>o
 ```
 Expected: `occurrences (14d): N` (>0); каждая допустимая — только `adult` + уровень в диапазоне + `men/mixed` (для сида — «Мужчины 2,5–3,5» и «Смешанные», не «Девушки»/«Дети»/«Экстремалы 3,5+»).
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(2b): groupOccurrences generator + eligibility rule"
 ```
@@ -205,7 +205,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2b): groupOccurre
 - Consumes: `DEV_ALLOW_UNSIGNED`, `validateInitData`, `upsertTgSession`, `getTgSession`, `confirmedByPhone`, `groupOccurrences`, `eligible`, `countConfirmedStmt`, `studentActiveBookings`, `coachNameBySlot`, `parseStartMinutes`.
 - Produces: `resolveAppUser(body)`, `resolveAppStudent(body)`; роут `POST /api/app/lessons`.
 
-- [ ] **Шаг 1: Добавить `resolveAppStudent` и `/api/app/lessons`**
+- [x] **Шаг 1: Добавить `resolveAppStudent` и `/api/app/lessons`**
 
 В `server.js` сразу после роута `POST /api/app/identify` (после его закрывающей `});`) вставить:
 ```js
@@ -252,7 +252,7 @@ app.post('/api/app/lessons', (req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Проверить lessons для подходящего ученика (dev)**
+- [x] **Шаг 2: Проверить lessons для подходящего ученика (dev)**
 
 Run:
 ```bash
@@ -265,7 +265,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `forbidden` для чужого телефона; `status: ok`, `count > 0`, первая карточка с `group_id/date/free/capacity/status:'open'/booked:false` (телефон матчится нормализованно: `79007770011` ↔ `+7 900 777-00-11`).
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(2b): resolveAppStudent + /api/app/lessons (eligible dated lessons with availability)"
 ```
@@ -281,7 +281,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2b): resolveAppSt
 - Consumes: `resolveAppStudent`, `groupOccurrences`, `eligible`, `db.transaction`, `countConfirmedStmt`, `activeBookingExists`, `insertGroupBooking`.
 - Produces: роут `POST /api/app/book`.
 
-- [ ] **Шаг 1: Добавить `/api/app/book`**
+- [x] **Шаг 1: Добавить `/api/app/book`**
 
 В `server.js` сразу после роута `POST /api/app/lessons` вставить:
 ```js
@@ -314,7 +314,7 @@ app.post('/api/app/book', (req, res) => {
 });
 ```
 
-- [ ] **Шаг 2: Проверить бронь: ok → duplicate → ineligible → full**
+- [x] **Шаг 2: Проверить бронь: ok → duplicate → ineligible → full**
 
 Run:
 ```bash
@@ -337,7 +337,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `book ok -> {"ok":true,"free":<capacity-1>}`; `duplicate`; `ineligible`; `full`.
 
-- [ ] **Шаг 3: Commit**
+- [x] **Шаг 3: Commit**
 ```bash
 cd /root/savvateam && git add server.js && git commit -m "feat(2b): /api/app/book atomic group booking (full/duplicate/ineligible/expired)"
 ```
@@ -352,7 +352,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2b): /api/app/boo
 **Interfaces:**
 - Consumes: `POST /api/app/identify`, `POST /api/app/lessons`, `POST /api/app/book`.
 
-- [ ] **Шаг 1: Добавить CSS для списка занятий**
+- [x] **Шаг 1: Добавить CSS для списка занятий**
 
 В `public/app.html` внутри `<style>`, перед закрывающей `</style>`, добавить:
 ```css
@@ -366,7 +366,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2b): /api/app/boo
     .bk.booked { color:#FFB347; }
 ```
 
-- [ ] **Шаг 2: Заменить весь `<script>` на расширенный**
+- [x] **Шаг 2: Заменить весь `<script>` на расширенный**
 
 Заменить весь блок `<script> … </script>` (тот, что содержит `const tg = window.Telegram`) на:
 ```html
@@ -460,7 +460,7 @@ cd /root/savvateam && git add server.js && git commit -m "feat(2b): /api/app/boo
   </script>
 ```
 
-- [ ] **Шаг 3: Проверить, что страница отдаётся и скрипт валиден**
+- [x] **Шаг 3: Проверить, что страница отдаётся и скрипт валиден**
 
 Run:
 ```bash
@@ -472,7 +472,7 @@ kill $SRV 2>/dev/null
 ```
 Expected: `/app -> 200`; `script parses (sync-stripped) OK`; grep `>=3` (эндпоинты и рендер присутствуют).
 
-- [ ] **Шаг 4: Commit**
+- [x] **Шаг 4: Commit**
 ```bash
 cd /root/savvateam && git add public/app.html && git commit -m "feat(2b): Mini App lessons list + one-tap group booking"
 ```
@@ -483,7 +483,7 @@ cd /root/savvateam && git add public/app.html && git commit -m "feat(2b): Mini A
 
 **Files:** нет изменений кода — выкладка.
 
-- [ ] **Шаг 1: Выложить сервер и Mini App**
+- [x] **Шаг 1: Выложить сервер и Mini App**
 ```bash
 cd /root/savvateam && export SSHPASS='oDR%r1C%rZjm'
 sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no" server.js root@45.139.29.201:/root/savvateam-site/
@@ -491,14 +491,14 @@ sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no" public/app.html root@4
 echo "rsync done"
 ```
 
-- [ ] **Шаг 2: Перезапустить и проверить таблицу bookings**
+- [x] **Шаг 2: Перезапустить и проверить таблицу bookings**
 ```bash
 export SSHPASS='oDR%r1C%rZjm'
 sshpass -e ssh -o StrictHostKeyChecking=no root@45.139.29.201 "cd /root/savvateam-site && pm2 restart savvateam >/dev/null 2>&1 && sleep 1.5 && node -e \"const D=require('better-sqlite3');const db=new D('db/leads.db');console.log('bookings cols:',db.prepare('PRAGMA table_info(bookings)').all().length,'| ux index:',db.prepare(\\\"SELECT name FROM sqlite_master WHERE name='ux_booking_active'\\\").all().length)\""
 ```
 Expected: `bookings cols: 9 | ux index: 1`.
 
-- [ ] **Шаг 3: Прод smoke — эндпоинты отвечают, auth работает**
+- [x] **Шаг 3: Прод smoke — эндпоинты отвечают, auth работает**
 ```bash
 export SSHPASS='oDR%r1C%rZjm'
 sshpass -e ssh -o StrictHostKeyChecking=no root@45.139.29.201 "
@@ -509,11 +509,11 @@ echo -n "public /app -> "; curl -s https://savva.n2node.store/app -o /dev/null -
 ```
 Expected: оба `401`; публичный `/app` `200`.
 
-- [ ] **Шаг 4: Живая проверка в Telegram (ручная, пользователем)**
+- [x] **Шаг 4: Живая проверка в Telegram (ручная, пользователем)**
 
 Предусловие: в админке у своего ученика проставить `level`/`audience`/`gender` (иначе занятий не будет) и `confirmed`. Затем @SavvaPadel_bot → Mini App → должен появиться список подходящих занятий по датам со «свободно N/M»; тап → «Записаны!»; повторный тап того же → недоступен (уже записаны); счётчик уменьшается.
 
-- [ ] **Шаг 5: Push**
+- [x] **Шаг 5: Push**
 ```bash
 cd /root/savvateam && git push origin main
 ```
