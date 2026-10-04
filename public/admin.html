@@ -393,6 +393,10 @@ async function fetchLeadsAndStats(secret){
         'stat1_num','stat1_label','stat2_num','stat2_label','stat3_num','stat3_label'];
       fields.forEach(f=>{ const v=c['coach'+n+'_'+f]; if(v!=null) co[f]=v; });
     });
+    // Карточки программ и тарифов — источник истины на сервере
+    [['programs_data','programs'],['prices_data','prices']].forEach(([k,sk])=>{
+      if(c[k]){ try{ const a=JSON.parse(c[k]); if(Array.isArray(a)) state[sk]=a; }catch(e){} }
+    });
     if(c.schedule_data){ try{ const s=JSON.parse(c.schedule_data); if(s&&Array.isArray(s.days)&&Array.isArray(s.rows)) state.schedule=s; }catch(e){} }
     saveStore();
   }
@@ -774,50 +778,79 @@ async function newStudent(){
 }
 
 /* ============= PROGRAMS ============= */
+/* Списки (details/features) в state — массивы; старый формат localStorage — строка через «|» */
+function cardList(v){return Array.isArray(v)?v:String(v||'').split('|').map(x=>x.trim()).filter(Boolean)}
+function cardLines(v){return String(v||'').split('\n').map(x=>x.trim()).filter(Boolean)}
+async function publishCards(key,list,rerender){
+  saveStore();
+  try{
+    const res=await fetch('/api/content?secret='+encodeURIComponent(adminSecret),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[key]:JSON.stringify(list)})});
+    toast(res.ok?'Сохранено и опубликовано на сайте':'Сохранено локально (ошибка сервера)');
+  }catch(e){toast('Сохранено локально (нет соединения)')}
+  rerender(document.getElementById('pageContent'));
+}
+function programsPayload(){return state.programs.map(p=>({id:p.id,name:p.name||'',level:p.level||'',desc:p.desc||'',details:cardList(p.details),featured:!!p.featured}))}
 function renderPrograms(c){
-  c.innerHTML=`<div class="page-head"><div><div class="page-title">ПРОГРАММЫ</div><div class="page-sub">Редактирование секции на лендинге</div></div><div class="page-actions"><button class="btn btn-primary" onclick="addProgram()">+ Программа</button></div></div>
+  c.innerHTML=`<div class="page-head"><div><div class="page-title">ПРОГРАММЫ</div><div class="page-sub">Карточки секции «Программы» на лендинге</div></div><div class="page-actions"><button class="btn btn-primary" onclick="addProgram()">+ Программа</button></div></div>
    <div class="editor-grid">${state.programs.map((p,i)=>programEditor(p,i)).join('')}</div>`;
 }
 function programEditor(p,i){
   return `<div class="editor-card">
-    <h3>${escapeHtml(p.name)}</h3><div class="editor-cat">${escapeHtml(p.level)}</div>
+    <h3>${escapeHtml(p.name)}</h3><div class="editor-cat">${p.featured?'★ Выделена':escapeHtml(p.level)}</div>
     <div class="field"><label>Название</label><input data-pid="${p.id}" data-key="name" value="${escapeAttr(p.name)}"/></div>
-    <div class="field"><label>Уровень</label><input data-pid="${p.id}" data-key="level" value="${escapeAttr(p.level)}"/></div>
-    <div class="field"><label>Стоимость</label><input data-pid="${p.id}" data-key="price" value="${escapeAttr(p.price)}"/></div>
-    <div class="field"><label>Частота</label><input data-pid="${p.id}" data-key="sessions" value="${escapeAttr(p.sessions)}"/></div>
+    <div class="field"><label>Подпись над названием</label><input data-pid="${p.id}" data-key="level" value="${escapeAttr(p.level)}"/></div>
     <div class="field"><label>Описание</label><textarea data-pid="${p.id}" data-key="desc">${escapeHtml(p.desc)}</textarea></div>
+    <div class="field"><label>Пункты (по одному в строке)</label><textarea data-pid="${p.id}" data-key="details" data-list="1" rows="4">${escapeHtml(cardList(p.details).join('\n'))}</textarea></div>
+    <div class="field"><label><input type="checkbox" data-pid="${p.id}" data-key="featured" ${p.featured?'checked':''}/> Выделить карточку</label></div>
     <div class="editor-actions"><button class="btn btn-primary" onclick="saveProgram(${p.id})">Сохранить</button><button class="btn btn-danger" onclick="deleteProgram(${p.id})">Удалить</button></div>
   </div>`;
 }
+function collectCard(obj,id){
+  document.querySelectorAll(`[data-pid="${id}"]`).forEach(inp=>{
+    obj[inp.dataset.key]=inp.type==='checkbox'?inp.checked:(inp.dataset.list?cardLines(inp.value):inp.value.trim());
+  });
+}
 function saveProgram(id){
   const p=state.programs.find(x=>x.id===id);if(!p)return;
-  document.querySelectorAll(`[data-pid="${id}"]`).forEach(inp=>{p[inp.dataset.key]=inp.value});
-  saveStore();renderPrograms(document.getElementById('pageContent'));toast('Сохранено');
+  collectCard(p,id);
+  publishCards('programs_data',programsPayload(),renderPrograms);
 }
-function deleteProgram(id){if(!confirm('Удалить?'))return;state.programs=state.programs.filter(p=>p.id!==id);saveStore();renderPrograms(document.getElementById('pageContent'))}
-function addProgram(){const id=Math.max(0,...state.programs.map(p=>p.id))+1;state.programs.push({id,name:'НОВАЯ',level:'',price:'',sessions:'',desc:''});saveStore();renderPrograms(document.getElementById('pageContent'))}
+function deleteProgram(id){
+  if(state.programs.length<=1){toast('Нужна хотя бы одна программа');return}
+  if(!confirm('Удалить программу с сайта?'))return;
+  state.programs=state.programs.filter(p=>p.id!==id);
+  publishCards('programs_data',programsPayload(),renderPrograms);
+}
+function addProgram(){const id=Math.max(0,...state.programs.map(p=>p.id))+1;state.programs.push({id,name:'НОВАЯ',level:'',desc:'',details:[],featured:false});saveStore();renderPrograms(document.getElementById('pageContent'));toast('Заполните карточку и нажмите «Сохранить»')}
 
 /* ============= PRICES ============= */
+function pricesPayload(){return state.prices.map(p=>({id:p.id,name:p.name||'',desc:p.desc||'',price:String(p.price??''),period:p.period||'',popular:!!p.popular,features:cardList(p.features)}))}
 function renderPrices(c){
-  c.innerHTML=`<div class="page-head"><div><div class="page-title">ЦЕНЫ</div><div class="page-sub">Тарифные пакеты</div></div></div>
+  c.innerHTML=`<div class="page-head"><div><div class="page-title">ЦЕНЫ</div><div class="page-sub">Карточки секции «Тарифы» на лендинге</div></div><div class="page-actions"><button class="btn btn-primary" onclick="addPrice()">+ Тариф</button></div></div>
    <div class="editor-grid">${state.prices.map(p=>`
      <div class="editor-card">
        <h3>${escapeHtml(p.name)}</h3><div class="editor-cat">${p.popular?'★ Популярный':' '}</div>
        <div class="field"><label>Название</label><input data-pid="${p.id}" data-key="name" value="${escapeAttr(p.name)}"/></div>
-       <div class="field"><label>Цена (₽)</label><input data-pid="${p.id}" data-key="price" type="number" value="${p.price}"/></div>
+       <div class="field"><label>Описание</label><textarea data-pid="${p.id}" data-key="desc">${escapeHtml(p.desc)}</textarea></div>
+       <div class="field"><label>Цена (₽)</label><input data-pid="${p.id}" data-key="price" value="${escapeAttr(p.price)}"/></div>
        <div class="field"><label>Период</label><input data-pid="${p.id}" data-key="period" value="${escapeAttr(p.period)}"/></div>
+       <div class="field"><label>Что входит (по одному в строке)</label><textarea data-pid="${p.id}" data-key="features" data-list="1" rows="5">${escapeHtml(cardList(p.features).join('\n'))}</textarea></div>
        <div class="field"><label><input type="checkbox" data-pid="${p.id}" data-key="popular" ${p.popular?'checked':''}/> Отметить как популярный</label></div>
-       <div class="editor-actions"><button class="btn btn-primary" onclick="savePrice(${p.id})">Сохранить</button></div>
+       <div class="editor-actions"><button class="btn btn-primary" onclick="savePrice(${p.id})">Сохранить</button><button class="btn btn-danger" onclick="deletePrice(${p.id})">Удалить</button></div>
      </div>`).join('')}</div>`;
 }
 function savePrice(id){
-  const p=state.prices.find(x=>x.id===id);
-  document.querySelectorAll(`[data-pid="${id}"]`).forEach(inp=>{
-    const v=inp.type==='checkbox'?inp.checked:(inp.type==='number'?Number(inp.value):inp.value);
-    p[inp.dataset.key]=v;
-  });
-  saveStore();toast('Сохранено');renderPrices(document.getElementById('pageContent'));
+  const p=state.prices.find(x=>x.id===id);if(!p)return;
+  collectCard(p,id);
+  publishCards('prices_data',pricesPayload(),renderPrices);
 }
+function deletePrice(id){
+  if(state.prices.length<=1){toast('Нужен хотя бы один тариф');return}
+  if(!confirm('Удалить тариф с сайта?'))return;
+  state.prices=state.prices.filter(p=>p.id!==id);
+  publishCards('prices_data',pricesPayload(),renderPrices);
+}
+function addPrice(){const id=Math.max(0,...state.prices.map(p=>p.id))+1;state.prices.push({id,name:'НОВЫЙ',desc:'',price:'',period:'',popular:false,features:[]});saveStore();renderPrices(document.getElementById('pageContent'));toast('Заполните карточку и нажмите «Сохранить»')}
 
 /* ============= AVAILABILITY ============= */
 const AV_DAY_LABELS = {1:'Понедельник',2:'Вторник',3:'Среда',4:'Четверг',5:'Пятница',6:'Суббота',0:'Воскресенье'};

@@ -2067,7 +2067,7 @@ function closeMenu(){
   <div class="section-inner">
     <div class="section-label reveal" data-content="programs_label">Программы</div>
     <h2 class="section-title reveal reveal-delay-1" data-content="programs_title" data-content-html>ДЛЯ<br>КАЖДОГО</h2>
-    <div class="programs-grid">
+    <div class="programs-grid" id="programs-grid">
       <div class="program-card reveal reveal-delay-1">
         <div class="program-num">01</div>
         <div class="program-level">Пакет · Старт</div>
@@ -2126,7 +2126,7 @@ function closeMenu(){
   <div class="section-inner">
     <div class="section-label reveal" data-content="prices_label">Тарифы</div>
     <h2 class="section-title reveal reveal-delay-1" data-content="prices_title" data-content-html>ВЫБЕРИТЕ<br>СВОЙ ПЛАН</h2>
-    <div class="prices-grid">
+    <div class="prices-grid" id="prices-grid">
       <div class="price-card reveal reveal-delay-1">
         <div class="price-name">СТАРТ</div>
         <div class="price-desc">Персональные тренировки — первые шаги в падел теннисе</div>
@@ -2691,10 +2691,69 @@ document.getElementById('contactSubmit').addEventListener('click', async () => {
     });
 
     // Запуск видео с URL из content API
+    renderPrograms(c);
+    renderPrices(c);
     renderSchedule(c);
     loadVideos(c);
   } catch(e) { loadVideos({}); }
 })();
+
+// Карточки «Программы» и «Тарифы» из content API (статичная разметка — фолбэк)
+function parseCards(raw) {
+  let data;
+  try { data = JSON.parse(raw); } catch (e) { return null; }
+  return Array.isArray(data) && data.length ? data : null;
+}
+function revealCards(grid) {
+  const els = grid.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) { els.forEach(el => el.classList.add('visible')); return; }
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+  els.forEach(el => obs.observe(el));
+}
+function renderPrograms(c) {
+  const grid = document.getElementById('programs-grid');
+  const data = parseCards(c.programs_data);
+  if (!grid || !data) return;
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  grid.innerHTML = data.map((p, i) => `
+      <div class="program-card${p.featured ? ' featured' : ''} reveal reveal-delay-${i % 3 + 1}">
+        <div class="program-num">${String(i + 1).padStart(2, '0')}</div>
+        <div class="program-level">${esc(p.level)}</div>
+        <div class="program-name">${esc(p.name)}</div>
+        <div class="program-desc">${esc(p.desc)}</div>
+        <div class="program-details">${(Array.isArray(p.details) ? p.details : []).map(d => `
+          <div class="program-detail">${esc(d)}</div>`).join('')}
+        </div>
+        <a href="#contact" class="program-link">Записаться <span class="arrow">→</span></a>
+      </div>`).join('');
+  revealCards(grid);
+}
+function renderPrices(c) {
+  const grid = document.getElementById('prices-grid');
+  const data = parseCards(c.prices_data);
+  if (!grid || !data) return;
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  // «5000» → «5 000»; нечисловое значение («от 4 000») выводим как есть
+  const fmt = v => /^\d+$/.test(String(v).trim()) ? String(v).trim().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : String(v == null ? '' : v);
+  grid.innerHTML = data.map((p, i) => `
+      <div class="price-card${p.popular ? ' popular' : ''} reveal reveal-delay-${i % 3 + 1}">
+        ${p.popular ? '<div class="popular-badge">Популярный</div>' : ''}
+        <div class="price-name">${esc(p.name)}</div>
+        <div class="price-desc">${esc(p.desc)}</div>
+        <div class="price-amount">
+          <span class="price-currency"${p.popular ? ' style="color: rgba(12,12,12,0.45);"' : ''}>₽</span>
+          <span class="price-num">${esc(fmt(p.price))}</span>
+        </div>
+        <div class="price-period"${p.popular ? ' style="color: rgba(12,12,12,0.55);"' : ''}>${esc(p.period)}</div>
+        <div class="price-features">${(Array.isArray(p.features) ? p.features : []).map(f => `
+          <div class="price-feature"><div class="check">✓</div>${esc(f)}</div>`).join('')}
+        </div>
+        <button class="price-btn ${p.popular ? 'price-btn-solid' : 'price-btn-ghost'}" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Выбрать</button>
+      </div>`).join('');
+  revealCards(grid);
+}
 
 function renderSchedule(c) {
   const grid = document.getElementById('schedule-grid');
