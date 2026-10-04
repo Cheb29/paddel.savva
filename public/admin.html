@@ -394,7 +394,7 @@ async function fetchLeadsAndStats(secret){
       fields.forEach(f=>{ const v=c['coach'+n+'_'+f]; if(v!=null) co[f]=v; });
     });
     // Карточки программ и тарифов — источник истины на сервере
-    [['programs_data','programs'],['prices_data','prices']].forEach(([k,sk])=>{
+    [['programs_data','programs'],['prices_data','prices'],['testimonials_data','testimonials']].forEach(([k,sk])=>{
       if(c[k]){ try{ const a=JSON.parse(c[k]); if(Array.isArray(a)) state[sk]=a; }catch(e){} }
     });
     if(c.schedule_data){ try{ const s=JSON.parse(c.schedule_data); if(s&&Array.isArray(s.days)&&Array.isArray(s.rows)) state.schedule=s; }catch(e){} }
@@ -1003,20 +1003,30 @@ async function saveSchedule(){
   if(res.ok){saveStore();toast('Расписание опубликовано')}else{toast('Ошибка сохранения')}
 }
 /* ============= TESTIMONIALS ============= */
+function testimonialsPayload(){return state.testimonials.map(t=>({id:t.id,author:t.author||'',role:t.role||'',text:t.text||''}))}
 function renderTestimonials(c){
-  c.innerHTML=`<div class="page-head"><div><div class="page-title">ОТЗЫВЫ</div><div class="page-sub">${state.testimonials.length} отзывов</div></div><div class="page-actions"><button class="btn btn-primary" onclick="addTest()">+ Отзыв</button></div></div>
+  c.innerHTML=`<div class="page-head"><div><div class="page-title">ОТЗЫВЫ</div><div class="page-sub">${state.testimonials.length} отзывов · карточки секции «Отзывы» на лендинге</div></div><div class="page-actions"><button class="btn btn-primary" onclick="addTest()">+ Отзыв</button></div></div>
   <div class="editor-grid">${state.testimonials.map(t=>`
    <div class="editor-card">
      <h3>${escapeHtml(t.author)}</h3><div class="editor-cat">${escapeHtml(t.role)}</div>
      <div class="field"><label>Автор</label><input data-tid="${t.id}" data-key="author" value="${escapeAttr(t.author)}"/></div>
-     <div class="field"><label>Уровень</label><input data-tid="${t.id}" data-key="role" value="${escapeAttr(t.role)}"/></div>
-     <div class="field"><label>Текст</label><textarea data-tid="${t.id}" data-key="text">${escapeHtml(t.text)}</textarea></div>
+     <div class="field"><label>Подпись под именем</label><input data-tid="${t.id}" data-key="role" value="${escapeAttr(t.role)}"/></div>
+     <div class="field"><label>Текст (*фрагмент в звёздочках* будет выделен)</label><textarea data-tid="${t.id}" data-key="text" rows="5">${escapeHtml(t.text)}</textarea></div>
      <div class="editor-actions"><button class="btn btn-primary" onclick="saveTest(${t.id})">Сохранить</button><button class="btn btn-danger" onclick="delTest(${t.id})">Удалить</button></div>
    </div>`).join('')}</div>`;
 }
-function saveTest(id){const t=state.testimonials.find(x=>x.id===id);document.querySelectorAll(`[data-tid="${id}"]`).forEach(i=>t[i.dataset.key]=i.value);saveStore();renderTestimonials(document.getElementById('pageContent'));toast('Сохранено')}
-function delTest(id){if(!confirm('Удалить?'))return;state.testimonials=state.testimonials.filter(t=>t.id!==id);saveStore();renderTestimonials(document.getElementById('pageContent'))}
-function addTest(){const id=Math.max(0,...state.testimonials.map(t=>t.id))+1;state.testimonials.push({id,author:'Новый автор',role:'Уровень C',text:'Текст отзыва...'});saveStore();renderTestimonials(document.getElementById('pageContent'))}
+function saveTest(id){
+  const t=state.testimonials.find(x=>x.id===id);if(!t)return;
+  document.querySelectorAll(`[data-tid="${id}"]`).forEach(i=>t[i.dataset.key]=i.value.trim());
+  publishCards('testimonials_data',testimonialsPayload(),renderTestimonials);
+}
+function delTest(id){
+  if(state.testimonials.length<=1){toast('Нужен хотя бы один отзыв');return}
+  if(!confirm('Удалить отзыв с сайта?'))return;
+  state.testimonials=state.testimonials.filter(t=>t.id!==id);
+  publishCards('testimonials_data',testimonialsPayload(),renderTestimonials);
+}
+function addTest(){const id=Math.max(0,...state.testimonials.map(t=>t.id))+1;state.testimonials.push({id,author:'Новый автор',role:'',text:''});saveStore();renderTestimonials(document.getElementById('pageContent'));toast('Заполните отзыв и нажмите «Сохранить»')}
 
 /* ============= TEXTS ============= */
 const TEXT_GROUPS=[

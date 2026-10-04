@@ -2288,7 +2288,7 @@ function closeMenu(){
   <div class="section-inner">
     <div class="section-label reveal" data-content="testimonials_label">Отзывы</div>
     <h2 class="section-title reveal reveal-delay-1" data-content="testimonials_title" data-content-html>ЧТО<br>ГОВОРЯТ</h2>
-    <div class="testimonials-track">
+    <div class="testimonials-track" id="testimonials-track">
       <div class="testimonial-card reveal reveal-delay-1">
         <div class="quote-mark">"</div>
         <p class="testimonial-text">Пришёл полным нулём — через 3 месяца уже играю в турнирах. <em>Методика реально работает.</em> Тренеры знают своё дело, атмосфера отличная.</p>
@@ -2693,6 +2693,7 @@ document.getElementById('contactSubmit').addEventListener('click', async () => {
     // Запуск видео с URL из content API
     renderPrograms(c);
     renderPrices(c);
+    renderTestimonials(c);
     renderSchedule(c);
     loadVideos(c);
   } catch(e) { loadVideos({}); }
@@ -2751,6 +2752,29 @@ function renderPrices(c) {
           <div class="price-feature"><div class="check">✓</div>${esc(f)}</div>`).join('')}
         </div>
         <button class="price-btn ${p.popular ? 'price-btn-solid' : 'price-btn-ghost'}" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Выбрать</button>
+      </div>`).join('');
+  revealCards(grid);
+}
+
+function renderTestimonials(c) {
+  const grid = document.getElementById('testimonials-track');
+  const data = parseCards(c.testimonials_data);
+  if (!grid || !data) return;
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  // *фрагмент* → акцент
+  const rich = s => esc(s).replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  grid.innerHTML = data.map((t, i) => `
+      <div class="testimonial-card reveal reveal-delay-${i % 3 + 1}">
+        <div class="quote-mark">"</div>
+        <p class="testimonial-text">${rich(t.text)}</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">${esc(String(t.author || '').trim().charAt(0).toUpperCase())}</div>
+          <div>
+            <div class="author-name">${esc(t.author)}</div>
+            <div class="author-role">${esc(t.role)}</div>
+          </div>
+          <div class="stars" style="margin-left: auto;">★★★★★</div>
+        </div>
       </div>`).join('');
   revealCards(grid);
 }
